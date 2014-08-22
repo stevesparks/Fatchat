@@ -13,6 +13,7 @@
 		0E3CA3B419A7696100A6AA21 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 0E3CA3B219A7696000A6AA21 /* Main.storyboard */; };
 		0E3CA3B619A7696100A6AA21 /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0E3CA3B519A7696100A6AA21 /* Images.xcassets */; };
 		0E3CA3C219A7696100A6AA21 /* FatchatTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 0E3CA3C119A7696100A6AA21 /* FatchatTests.m */; };
+		0E3CA3CD19A7697900A6AA21 /* CloudKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0E3CA3CC19A7697900A6AA21 /* CloudKit.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -38,6 +39,8 @@
 		0E3CA3BB19A7696100A6AA21 /* FatchatTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FatchatTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		0E3CA3C019A7696100A6AA21 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		0E3CA3C119A7696100A6AA21 /* FatchatTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = FatchatTests.m; sourceTree = "<group>"; };
+		0E3CA3CB19A7697000A6AA21 /* Fatchat.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Fatchat.entitlements; sourceTree = "<group>"; };
+		0E3CA3CC19A7697900A6AA21 /* CloudKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CloudKit.framework; path = System/Library/Frameworks/CloudKit.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -45,6 +48,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0E3CA3CD19A7697900A6AA21 /* CloudKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -61,6 +65,7 @@
 		0E3CA39C19A7696000A6AA21 = {
 			isa = PBXGroup;
 			children = (
+				0E3CA3CC19A7697900A6AA21 /* CloudKit.framework */,
 				0E3CA3A719A7696000A6AA21 /* Fatchat */,
 				0E3CA3BE19A7696100A6AA21 /* FatchatTests */,
 				0E3CA3A619A7696000A6AA21 /* Products */,
@@ -79,6 +84,8 @@
 		0E3CA3A719A7696000A6AA21 /* Fatchat */ = {
 			isa = PBXGroup;
 			children = (
+				0E3CA3CE19A7699100A6AA21 /* UI */,
+				0E3CA3CB19A7697000A6AA21 /* Fatchat.entitlements */,
 				0E3CA3AC19A7696000A6AA21 /* AppDelegate.h */,
 				0E3CA3AD19A7696000A6AA21 /* AppDelegate.m */,
 				0E3CA3AF19A7696000A6AA21 /* ViewController.h */,
@@ -114,6 +121,13 @@
 				0E3CA3C019A7696100A6AA21 /* Info.plist */,
 			);
 			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
+		0E3CA3CE19A7699100A6AA21 /* UI */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = UI;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -165,6 +179,12 @@
 				TargetAttributes = {
 					0E3CA3A419A7696000A6AA21 = {
 						CreatedOnToolsVersion = 6.0;
+						DevelopmentTeam = LPR82YBESG;
+						SystemCapabilities = {
+							com.apple.iCloud = {
+								enabled = 1;
+							};
+						};
 					};
 					0E3CA3BA19A7696100A6AA21 = {
 						CreatedOnToolsVersion = 6.0;
@@ -334,9 +354,13 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
+				CODE_SIGN_ENTITLEMENTS = Fatchat/Fatchat.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				INFOPLIST_FILE = Fatchat/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE = "";
 			};
 			name = Debug;
 		};
@@ -345,9 +369,13 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
+				CODE_SIGN_ENTITLEMENTS = Fatchat/Fatchat.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				INFOPLIST_FILE = Fatchat/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE = "";
 			};
 			name = Release;
 		};
