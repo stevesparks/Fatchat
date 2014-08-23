@@ -30,9 +30,14 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.title = self.channel.name;
+    if(self.channel.subscribed) {
+        self.navigationItem.prompt = @"Subscribed";
+    }
     UIBarButtonItem *refreshButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemRefresh target:self action:@selector(refreshData)];
-    UIBarButtonItem *handleButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemAction target:self action:@selector(promptForNewHandle)];
-    self.navigationItem.rightBarButtonItems = @[ handleButton, refreshButton ];
+    UIBarButtonItem *handleButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemCompose target:self action:@selector(promptForNewHandle)];
+    UIBarButtonItem *subButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemBookmarks target:self action:@selector(toggleSubscription)];
+
+    self.navigationItem.rightBarButtonItems = @[ refreshButton, handleButton, subButton ];
     [self refreshData];
 }
 - (void)asyncReload {
@@ -113,6 +118,23 @@
     return NO;
 }
 
+- (void)toggleSubscription {
+    if(self.channel.subscribed) {
+        [[BNRCloudStore sharedStore] unsubscribeFromChannel:self.channel completion:^(BNRChatChannel *channel, NSError *error){
+            if(error) {
+                NSLog(@"Error %@", error.localizedDescription);
+            }
+            [self refreshData];
+        }];
+    } else {
+        [[BNRCloudStore sharedStore] subscribeToChannel:self.channel completion:^(BNRChatChannel *channel, NSError *error){
+            if(error) {
+                NSLog(@"Error %@", error.localizedDescription);
+            }
+            [self refreshData];
+        }];
+    }
+}
 
 - (void)alertView:(UIAlertView *)alertView didDismissWithButtonIndex:(NSInteger)buttonIndex {
     if(buttonIndex) {

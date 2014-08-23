@@ -33,8 +33,8 @@
 @end
 
 @interface BNRCloudStore : NSObject
-@property (copy, nonatomic) NSString *myIdentifier;
 
+@property (copy, nonatomic) NSString *myIdentifier;
 @property (copy, nonatomic) NSString *handle;
 
 @property (weak, nonatomic) NSObject<BNRCloudStoreChannelDelegate> *channelDelegate;
@@ -42,17 +42,21 @@
 
 + (instancetype) sharedStore;
 
+
 - (void)fetchChannelsWithCompletion:(void(^)(NSArray *channels, NSError *error))completion;
-
-- (void)fetchMessagesForChannel:(BNRChatChannel*)channel completion:(void(^)(NSArray *channels, NSError *error))completion;
-
 - (void)createNewChannel:(NSString*)channelName completion:(void(^)(BNRChatChannel *newChannel, NSError *error))completion;
 
+
+- (void)fetchMessagesForChannel:(BNRChatChannel*)channel completion:(void(^)(NSArray *channels, NSError *error))completion;
 - (void)createNewMessageWithText:(NSString*)text
                     assetFileUrl:(NSString*)assetFileUrl
                        assetType:(BNRChatMessageAssetType)assetType
                          channel:(BNRChatChannel*)channel
                       completion:(void(^)(BNRChatMessage *newChannel, NSError *error))completion;
+
+- (void)subscribeToChannel:(BNRChatChannel *)channel completion:(void(^)(BNRChatChannel *channel, NSError *error))completion;
+- (void)unsubscribeFromChannel:(BNRChatChannel*)channel completion:(void(^)(BNRChatChannel *channel, NSError *error))completion;
+;
 
 // "Message for you, sir!"
 - (void)didReceiveNotification:(NSDictionary*)notificationInfo;

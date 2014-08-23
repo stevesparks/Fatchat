@@ -20,7 +20,6 @@
 @end
 
 NSString * const ChannelNameKey = @"channelName";
-//NSString * const ChannelCreatorKey = @"channelCreator";
 NSString * const MessageTextKey = @"text";
 NSString * const AssetKey = @"asset";
 NSString * const AssetTypeKey = @"assetType";
@@ -81,6 +80,16 @@ NSString * const SubscriptionType = @"subscription";
 
 #pragma mark - Channels
 
+/**
+ *
+ * 1. Channels
+ *
+ * Let's start with "channels". To create a channel, we save a record to the zone
+ * with a RecordType of "channel". Thus searching for channels is querying for this
+ * record type. Destroying a channel is simply removing this record, though it should
+ * remove the appropriate messages, as well.
+ *
+ */
 - (void)createNewChannel:(NSString *)channelName completion:(void (^)(BNRChatChannel *, NSError *))completion {
     __block BNRChatChannel *channel = [[BNRChatChannel alloc] init];
     channel.name = channelName;
@@ -132,38 +141,43 @@ NSString * const SubscriptionType = @"subscription";
             return [channel1.createdDate compare:channel2.createdDate];
         }]; // property type `copy`
 
-        completion(self.channels, error);
+//        completion(self.channels, error);
         [self populateSubscriptionsWithCompletion:completion];
     }];
 }
 
 - (BNRChatChannel*)channelWithName:(NSString*)name {
-    NSUInteger idx = [self.channels indexOfObjectPassingTest:^BOOL(id obj, NSUInteger idx, BOOL *stop){
+    __block BNRChatChannel *ret = nil;
+    [self.channels indexOfObjectPassingTest:^BOOL(id obj, NSUInteger idx, BOOL *stop){
         BNRChatChannel *channel = obj;
         if([channel.name isEqualToString:name]) {
+            ret = channel;
             *stop = YES;
             return YES;
         }
         return NO;
     }];
-
-    if(idx == NSNotFound)
-        return nil;
-
-    return self.channels[idx];
+    return ret;
 }
 
 #pragma mark - Subscriptions
 
-- (void)subscribeToChannel:(BNRChatChannel *)channel withPredicate:(NSPredicate*)predicate {
+- (CKNotificationInfo *)notificationInfoForChannel:(BNRChatChannel*)channel {
+    CKNotificationInfo *note = [[CKNotificationInfo alloc] init];
+    note.alertBody = @"Alert Body";
+    note.shouldBadge = YES;
+    note.shouldSendContentAvailable = NO;
+    return note;
+}
+
+- (void)subscribeToChannel:(BNRChatChannel *)channel completion:(void (^)(BNRChatChannel *, NSError *))completion {
     if(channel.subscribed)
         return;
 
+    NSPredicate *predicate = [NSPredicate predicateWithFormat:@"channelName = %@", channel.name];
     CKSubscription *subscription = [[CKSubscription alloc] initWithRecordType:MessageType predicate:predicate options:CKSubscriptionOptionsFiresOnRecordCreation];
     subscription.zoneID = self.publicZone.zoneID;
-    CKNotificationInfo *note = [[CKNotificationInfo alloc] init];
-    note.alertBody = @"Alert Body";
-    subscription.notificationInfo = note;
+    subscription.notificationInfo = [self notificationInfoForChannel:channel];
 
     [self.publicDB saveSubscription:subscription completionHandler:^(CKSubscription *subscription, NSError *error){
         if(error) {
@@ -171,6 +185,9 @@ NSString * const SubscriptionType = @"subscription";
         }
         if(subscription) {
             [self recordSubscription:subscription toChannel:channel];
+        }
+        if(completion) {
+            completion(channel, error);
         }
     }];
 }
@@ -194,9 +211,7 @@ NSString * const SubscriptionType = @"subscription";
     CKQuery *query = [[CKQuery alloc] initWithRecordType:SubscriptionType predicate:predicate];
 
     CKQueryOperation *queryOp = [[CKQueryOperation alloc] initWithQuery:query];
-
     NSMutableArray *subs = [[NSMutableArray alloc] init];
-
     queryOp.recordFetchedBlock = ^(CKRecord *record) {
         NSString *channelName = [record valueForKey:ChannelNameKey];
         BNRChatChannel *channel = [self channelWithName:channelName];
@@ -217,7 +232,14 @@ NSString * const SubscriptionType = @"subscription";
         completion(self.channels, error);
     };
 
-    [queryOp start];
+    //    [queryOp start];
+
+    [self.publicDB performQuery:query inZoneWithID:self.publicZone.zoneID completionHandler:^(NSArray *results, NSError *error){
+        for(CKRecord *record in results) {
+            queryOp.recordFetchedBlock(record);
+        }
+        queryOp.queryCompletionBlock(nil, error);
+    }];
 }
 
 - (BNRChannelSubscription*)subscriptionForChannel:(BNRChatChannel*)channel {
@@ -230,7 +252,7 @@ NSString * const SubscriptionType = @"subscription";
     return ret;
 }
 
-- (void)unsubscribeFromChannel:(BNRChatChannel*)channel {
+- (void)unsubscribeFromChannel:(BNRChatChannel*)channel completion:(void (^)(BNRChatChannel *, NSError *))completion {
     if(!channel.subscribed) {
         return;
     }
@@ -246,6 +268,9 @@ NSString * const SubscriptionType = @"subscription";
             NSLog(@"Error: %@", error.localizedDescription);
         }
         [self deleteSubscriptionRecord:sub];
+        if(completion) {
+            completion(channel, error);
+        }
     }];
 }
 
