@@ -29,8 +29,9 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    UIBarButtonItem *button = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemRefresh target:self action:@selector(refreshData)];
-    self.navigationItem.rightBarButtonItem = button;
+    UIBarButtonItem *refreshButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemRefresh target:self action:@selector(refreshData)];
+    UIBarButtonItem *handleButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemAction target:self action:@selector(promptForNewHandle)];
+    self.navigationItem.rightBarButtonItems = @[ handleButton, refreshButton ];
     [self refreshData];
 }
 - (void)asyncReload {
@@ -55,7 +56,14 @@
 
 
 - (void) promptForNewMessage {
-    UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:@"New Message" message:@"Gimme some text!" delegate:self cancelButtonTitle:@"Nevermind" otherButtonTitles:@"Post", nil];
+    NSString *message = [NSString stringWithFormat:@"%@ says...", [BNRCloudStore sharedStore].handle];
+    UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:@"New Message" message:message delegate:self cancelButtonTitle:@"Nevermind" otherButtonTitles:@"Post", nil];
+    alertView.alertViewStyle = UIAlertViewStylePlainTextInput;
+    [alertView show];
+}
+
+- (void) promptForNewHandle {
+    UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:@"New Handle" message:@"Who will you be?" delegate:self cancelButtonTitle:@"Nevermind" otherButtonTitles:@"Post", nil];
     alertView.alertViewStyle = UIAlertViewStylePlainTextInput;
     [alertView show];
 }
@@ -99,11 +107,16 @@
 
 - (void)alertView:(UIAlertView *)alertView didDismissWithButtonIndex:(NSInteger)buttonIndex {
     if(buttonIndex) {
-        NSString *messageText = [alertView textFieldAtIndex:0].text;
-        [[BNRCloudStore sharedStore] createNewMessageWithText:messageText assetFileUrl:nil assetType:BNRChatMessageAssetTypeNone channel:self.channel completion:^(BNRChatMessage *msg, NSError *err){
-            self.messages = [self.messages arrayByAddingObject:msg];
-            [self asyncReload];
-        }];
+        NSString *text = [alertView textFieldAtIndex:0].text;
+        if([alertView.title isEqualToString:@"New Message"]) {
+            [[BNRCloudStore sharedStore] createNewMessageWithText:text assetFileUrl:nil assetType:BNRChatMessageAssetTypeNone channel:self.channel completion:^(BNRChatMessage *msg, NSError *err){
+                self.messages = [self.messages arrayByAddingObject:msg];
+                [self asyncReload];
+            }];
+        } else {
+            [[BNRCloudStore sharedStore] setHandle:text];
+        }
+
     }
 }
 
