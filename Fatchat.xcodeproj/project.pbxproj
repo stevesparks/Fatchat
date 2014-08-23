@@ -55,6 +55,10 @@
 		0E3CA3DE19A76E3400A6AA21 /* BNRChatChannel.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = BNRChatChannel.m; sourceTree = "<group>"; };
 		0E3CA3E019A78AD000A6AA21 /* BNRChannelSubscription.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BNRChannelSubscription.h; sourceTree = "<group>"; };
 		0E3CA3E119A78AD000A6AA21 /* BNRChannelSubscription.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = BNRChannelSubscription.m; sourceTree = "<group>"; };
+		0E3CA3E319A7B15300A6AA21 /* BNRChannelListViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = BNRChannelListViewController.h; path = UI/BNRChannelListViewController.h; sourceTree = "<group>"; };
+		0E3CA3E419A7B15300A6AA21 /* BNRChannelListViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = BNRChannelListViewController.m; path = UI/BNRChannelListViewController.m; sourceTree = "<group>"; };
+		0E3CA3E619A7B38700A6AA21 /* BNRChannelChatViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = BNRChannelChatViewController.h; path = UI/BNRChannelChatViewController.h; sourceTree = "<group>"; };
+		0E3CA3E719A7B38700A6AA21 /* BNRChannelChatViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = BNRChannelChatViewController.m; path = UI/BNRChannelChatViewController.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -143,6 +147,10 @@
 		0E3CA3CE19A7699100A6AA21 /* UI */ = {
 			isa = PBXGroup;
 			children = (
+				0E3CA3E319A7B15300A6AA21 /* BNRChannelListViewController.h */,
+				0E3CA3E419A7B15300A6AA21 /* BNRChannelListViewController.m */,
+				0E3CA3E619A7B38700A6AA21 /* BNRChannelChatViewController.h */,
+				0E3CA3E719A7B38700A6AA21 /* BNRChannelChatViewController.m */,
 			);
 			name = UI;
 			sourceTree = "<group>";
@@ -269,9 +277,11 @@
 				0E3CA3DF19A76E3400A6AA21 /* BNRChatChannel.m in Sources */,
 				0E3CA3D919A76B8900A6AA21 /* BNRChatMessage.m in Sources */,
 				0E3CA3AE19A7696000A6AA21 /* AppDelegate.m in Sources */,
+				0E3CA3E819A7B38700A6AA21 /* BNRChannelChatViewController.m in Sources */,
 				0E3CA3AB19A7696000A6AA21 /* main.m in Sources */,
 				0E3CA3E219A78AD000A6AA21 /* BNRChannelSubscription.m in Sources */,
 				0E3CA3DC19A76BD100A6AA21 /* BNRCloudStore.m in Sources */,
+				0E3CA3E519A7B15300A6AA21 /* BNRChannelListViewController.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
