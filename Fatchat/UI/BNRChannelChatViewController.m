@@ -29,6 +29,7 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    self.title = self.channel.name;
     UIBarButtonItem *refreshButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemRefresh target:self action:@selector(refreshData)];
     UIBarButtonItem *handleButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemAction target:self action:@selector(promptForNewHandle)];
     self.navigationItem.rightBarButtonItems = @[ handleButton, refreshButton ];
@@ -57,15 +58,18 @@
 
 - (void) promptForNewMessage {
     NSString *message = [NSString stringWithFormat:@"%@ says...", [BNRCloudStore sharedStore].handle];
-    UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:@"New Message" message:message delegate:self cancelButtonTitle:@"Nevermind" otherButtonTitles:@"Post", nil];
+    UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:@"New Message" message:message delegate:self cancelButtonTitle:@"Nevermind" otherButtonTitles:@"Say it!", nil];
     alertView.alertViewStyle = UIAlertViewStylePlainTextInput;
     [alertView show];
 }
 
 - (void) promptForNewHandle {
-    UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:@"New Handle" message:@"Who will you be?" delegate:self cancelButtonTitle:@"Nevermind" otherButtonTitles:@"Post", nil];
+    UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:@"New Handle" message:@"Who will you be?" delegate:self cancelButtonTitle:@"Nevermind" otherButtonTitles:@"Rename Me", nil];
     alertView.alertViewStyle = UIAlertViewStylePlainTextInput;
     [alertView show];
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [alertView textFieldAtIndex:0].text = [BNRCloudStore sharedStore].handle;
+    });
 }
 
 #pragma mark - UITableView data source
@@ -88,9 +92,13 @@
         BNRChatMessage *msg = self.messages[indexPath.row];
         cell.textLabel.text = msg.message;
         cell.detailTextLabel.text = msg.senderName;
+        cell.accessoryView = nil;
     } else {
         cell.textLabel.text = self.otherCellText;
         cell.detailTextLabel.text = nil;
+        UIButton *button = [UIButton buttonWithType:UIButtonTypeContactAdd];
+        [button addTarget:self action:@selector(promptForNewMessage) forControlEvents:UIControlEventTouchUpInside];
+        cell.accessoryView = button;
     }
 
     return cell;
@@ -105,6 +113,7 @@
     return NO;
 }
 
+
 - (void)alertView:(UIAlertView *)alertView didDismissWithButtonIndex:(NSInteger)buttonIndex {
     if(buttonIndex) {
         NSString *text = [alertView textFieldAtIndex:0].text;
@@ -116,7 +125,6 @@
         } else {
             [[BNRCloudStore sharedStore] setHandle:text];
         }
-
     }
 }
 

@@ -27,6 +27,7 @@ NSString * const CellIdentifier = @"CellIdentifier";
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    self.title = @"Fatchat";
 
     UIBarButtonItem *button = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemRefresh target:self action:@selector(refreshData)];
     self.navigationItem.rightBarButtonItem = button;
@@ -97,11 +98,13 @@ NSString * const CellIdentifier = @"CellIdentifier";
         case BNRChannelListTableSectionChannels: {
             BNRChatChannel *channel = self.channels[indexPath.row];
             cell.textLabel.text = channel.name;
+            cell.detailTextLabel.text = channel.subscribed?@"Subscribed":nil;
             cell.accessoryView = nil;
         }
             break;
         case BNRChannelListTableSectionNew: {
             cell.textLabel.text = self.otherCellLabel;
+            cell.detailTextLabel.text = nil;
             UIButton *button = [UIButton buttonWithType:UIButtonTypeContactAdd];
             [button addTarget:self action:@selector(promptForNewChannel) forControlEvents:UIControlEventTouchUpInside];
             cell.accessoryView = button;

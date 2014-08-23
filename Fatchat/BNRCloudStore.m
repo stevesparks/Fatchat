@@ -28,11 +28,13 @@ NSString * const MyIdentifierKey = @"myIdentifier";
 NSString * const SubscriptionKey = @"subscription";
 NSString * const SenderKey = @"sender";
 
-NSString * const ChannelCreateType = @"init";
+NSString * const ChannelCreateType = @"channel";
 NSString * const MessageType = @"message";
 NSString * const SubscriptionType = @"subscription";
 
-@interface BNRCloudStore()
+@interface BNRCloudStore() {
+    NSString *_handle;
+}
 @property (copy, nonatomic) NSArray *channels;
 @property (copy, nonatomic) NSArray *subscriptions;
 
@@ -53,6 +55,7 @@ NSString * const SubscriptionType = @"subscription";
     if(self) {
         self.publicDB = [[CKContainer defaultContainer] publicCloudDatabase];
         self.publicZone = nil;
+        self.handle = [[NSUserDefaults standardUserDefaults] valueForKey:SenderKey];
     }
     return self;
 }
@@ -69,6 +72,11 @@ NSString * const SubscriptionType = @"subscription";
         _handle = [NSString stringWithFormat:@"Anon %06d", (arc4random()%1000000)];
     }
     return _handle;
+}
+
+- (void)setHandle:(NSString *)handle {
+    [[NSUserDefaults standardUserDefaults] setValue:handle forKey:SenderKey];
+    _handle = handle;
 }
 
 #pragma mark - Channels
