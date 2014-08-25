@@ -233,7 +233,7 @@
 				TargetAttributes = {
 					0E3CA3A419A7696000A6AA21 = {
 						CreatedOnToolsVersion = 6.0;
-						DevelopmentTeam = LPR82YBESG;
+						DevelopmentTeam = 439592V3LM;
 						SystemCapabilities = {
 							com.apple.iCloud = {
 								enabled = 1;
@@ -242,6 +242,7 @@
 					};
 					0E3CA3BA19A7696100A6AA21 = {
 						CreatedOnToolsVersion = 6.0;
+						DevelopmentTeam = 439592V3LM;
 						TestTargetID = 0E3CA3A419A7696000A6AA21;
 					};
 				};
