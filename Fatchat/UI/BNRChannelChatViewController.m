@@ -10,6 +10,8 @@
 #import "BNRCloudStore.h"
 #import "BNRChatChannel.h"
 #import "BNRChatMessage.h"
+#import "BNRChatMessageCell.h"
+#import "UITableViewCell+BNRAdditions.h"
 
 @interface BNRChannelChatViewController()<UIAlertViewDelegate>
 @property (strong, nonatomic) NSArray *messages;
@@ -87,18 +89,37 @@
     return self.messages.count + 1;
 }
 
+- (CGFloat)tableView:(UITableView *)tableView estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
+    return 120;
+}
+
+- (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath {
+    return 120;
+}
+
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
-    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"Cell"];
-    if(!cell) {
-        cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:@"Cell"];
-    }
+    UITableViewCell *cell;
 
     if(indexPath.row < self.messages.count) {
+        BNRChatMessageCell *mCell = [tableView dequeueReusableCellWithIdentifier:@"ChatMessageCell"];
+        if(!mCell) {
+            mCell = [BNRChatMessageCell bnr_instantiateCellFromNib];
+        }
         BNRChatMessage *msg = self.messages[indexPath.row];
-        cell.textLabel.text = msg.message;
-        cell.detailTextLabel.text = msg.senderName;
-        cell.accessoryView = nil;
+        mCell.message = msg;
+        cell = mCell;
+//        cell.textLabel.text = msg.message;
+//        cell.detailTextLabel.text = msg.senderName;
+//        cell.accessoryView = nil;
+//        if(msg.fromThisDevice) {
+//            cell.accessoryType = UITableViewCellAccessoryCheckmark;
+//        } else {
+//        }
     } else {
+        cell = [tableView dequeueReusableCellWithIdentifier:@"Cell"];
+        if(!cell) {
+            cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:@"Cell"];
+        }
         cell.textLabel.text = self.otherCellText;
         cell.detailTextLabel.text = nil;
         UIButton *button = [UIButton buttonWithType:UIButtonTypeContactAdd];

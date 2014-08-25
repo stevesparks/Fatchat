@@ -17,7 +17,13 @@
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
     // Override point for customization after application launch.
-    [application registerForRemoteNotifications];
+
+    if([application respondsToSelector:@selector(registerForRemoteNotifications)]) {
+        [application registerForRemoteNotifications];
+    } else {
+
+        [application registerForRemoteNotificationTypes:0xFF];
+    }
 
     return YES;
 }

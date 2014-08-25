@@ -140,10 +140,12 @@ NSString * const CellIdentifier = @"CellIdentifier";
         NSString *channelName = [alertView textFieldAtIndex:0].text;
         if(channelName.length) {
             [[BNRCloudStore sharedStore] createNewChannel:channelName completion:^(BNRChatChannel *channel, NSError *error){
-                self.channels = [self.channels arrayByAddingObject:channel];
-                dispatch_async(dispatch_get_main_queue(), ^{
-                    [self.tableView reloadData];
-                });
+                if(channel) {
+                    self.channels = [self.channels arrayByAddingObject:channel];
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        [self.tableView reloadData];
+                    });
+                }
             }];
         }
 

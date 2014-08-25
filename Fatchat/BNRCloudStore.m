@@ -26,6 +26,7 @@ NSString * const AssetTypeKey = @"assetType";
 NSString * const MyIdentifierKey = @"myIdentifier";
 NSString * const SubscriptionKey = @"subscription";
 NSString * const SenderKey = @"sender";
+NSString * const DeviceKey = @"device";
 
 NSString * const ChannelCreateType = @"channel";
 NSString * const MessageType = @"message";
@@ -245,7 +246,9 @@ NSString * const SubscriptionType = @"subscription";
 - (BNRChannelSubscription*)subscriptionForChannel:(BNRChatChannel*)channel {
     BNRChannelSubscription *ret = nil;
     for(BNRChannelSubscription *sub in self.subscriptions) {
-        if([sub.channel isEqual:channel]) {
+        BOOL isSame = [sub.channel.name isEqual:channel.name];
+        NSLog(@" %@ == %@? %@", sub.channel.name, channel.name, (isSame?@"YES":@"NO"));
+        if(isSame) {
             ret = sub;
         }
     }
@@ -258,7 +261,9 @@ NSString * const SubscriptionType = @"subscription";
     }
 
     BNRChannelSubscription *sub = [self subscriptionForChannel:channel];
-
+    if(!sub) {
+        return;
+    }
     NSMutableArray *arr = [self.subscriptions mutableCopy];
     [arr removeObject:sub];
     self.subscriptions = arr;
@@ -287,6 +292,10 @@ NSString * const SubscriptionType = @"subscription";
 #pragma mark - Messages
 
 - (BNRChatMessage*)messageWithRecord:(CKRecord*)record {
+    static NSString *deviceId = nil;
+    if(!deviceId) {
+        deviceId = [[UIDevice currentDevice] identifierForVendor].UUIDString;
+    }
     BNRChatMessage *newMessage = [[BNRChatMessage alloc] init];
     newMessage.message = [record valueForKey:MessageTextKey];
     newMessage.createdDate = record.creationDate;
@@ -295,6 +304,8 @@ NSString * const SubscriptionType = @"subscription";
     if(newMessage.assetType != BNRChatMessageAssetTypeNone) {
         newMessage.asset = [record valueForKey:AssetKey];
     }
+    NSUUID *uuid = [record valueForKey:DeviceKey];
+    newMessage.fromThisDevice = [uuid isEqual:deviceId];
 
     return newMessage;
 }
@@ -310,6 +321,7 @@ NSString * const SubscriptionType = @"subscription";
     [record setValue:text forKey:MessageTextKey];
     [record setValue:channel.name forKey:ChannelNameKey];
     [record setValue:self.handle forKey:SenderKey];
+    [record setValue:[[UIDevice currentDevice] identifierForVendor].UUIDString forKey:DeviceKey];
 
     // Attach an asset if given one.
     if(assetFileUrl) {

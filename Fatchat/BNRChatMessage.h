@@ -22,6 +22,8 @@ typedef NS_ENUM(NSUInteger, BNRChatMessageAssetType) {
 @property (nonatomic) NSString *senderName;
 @property (nonatomic) NSDate *createdDate;
 
+@property (nonatomic) BOOL fromThisDevice;
+
 @property (nonatomic) id asset;
 @property (nonatomic) BNRChatMessageAssetType assetType;
 
