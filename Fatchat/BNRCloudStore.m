@@ -20,6 +20,7 @@
 @end
 
 NSString * const ChannelNameKey = @"channelName";
+NSString * const ChannelReferenceKey = @"channel";
 NSString * const MessageTextKey = @"text";
 NSString * const AssetKey = @"asset";
 NSString * const AssetTypeKey = @"assetType";
@@ -117,6 +118,8 @@ NSString * const SubscriptionType = @"subscription";
             NSLog(@"Error: %@", error.localizedDescription);
         }
 
+        channel.recordID = record.recordID;
+
         if(!savedRecord) {
             channel = nil;
         }
@@ -141,6 +144,7 @@ NSString * const SubscriptionType = @"subscription";
                 BNRChatChannel *channel = [[BNRChatChannel alloc] init];
                 channel.name = [record valueForKey:ChannelNameKey];
                 channel.createdDate = record.creationDate;
+                channel.recordID = record.recordID;
                 [arr addObject:channel];
             }
         }
@@ -158,17 +162,7 @@ NSString * const SubscriptionType = @"subscription";
 - (void)destroyChannel:(BNRChatChannel *)channel {
     [self unsubscribeFromChannel:channel completion:^(BNRChatChannel *channel, NSError *error){
         NSPredicate *predicate = [NSPredicate predicateWithFormat:@"channelName = %@", channel.name];
-        CKQuery *query = [[CKQuery alloc] initWithRecordType:MessageType predicate:predicate];
-        [self.publicDB performQuery:query inZoneWithID:self.publicZone.zoneID completionHandler:^(NSArray *results, NSError *error){
-            for (CKRecord *record in results) {
-                [self.publicDB deleteRecordWithID:record.recordID completionHandler:^(CKRecordID *recordId, NSError *error){
-                    if(error)
-                        NSLog(@"Error Deleting message %@", error.localizedDescription);
-                }];
-            }
-        }];
-
-        query = [[CKQuery alloc] initWithRecordType:ChannelCreateType predicate:predicate];
+        CKQuery *query = [[CKQuery alloc] initWithRecordType:ChannelCreateType predicate:predicate];
         [self.publicDB performQuery:query inZoneWithID:self.publicZone.zoneID completionHandler:^(NSArray *results, NSError *error){
             for (CKRecord *record in results) {
                 [self.publicDB deleteRecordWithID:record.recordID completionHandler:^(CKRecordID *recordId, NSError *error){
@@ -361,6 +355,10 @@ NSString * const SubscriptionType = @"subscription";
     [record setValue:self.handle forKey:SenderKey];
     [record setValue:[[UIDevice currentDevice] identifierForVendor].UUIDString forKey:DeviceKey];
 
+    // Make sure the objects delete when the DB record is deleted.
+    CKReference *ref = [[CKReference alloc] initWithRecordID:channel.recordID action:CKReferenceActionDeleteSelf];
+    [record setValue:ref forKey:ChannelReferenceKey];
+    
     // Attach an asset if given one.
     if(assetFileUrl) {
         CKAsset *asset = [[CKAsset alloc] initWithFileURL:assetFileUrl];

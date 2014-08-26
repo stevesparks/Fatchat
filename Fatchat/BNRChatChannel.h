@@ -14,4 +14,6 @@
 
 @property (nonatomic) BOOL subscribed;
 
+@property (nonatomic) id recordID;
+
 @end
