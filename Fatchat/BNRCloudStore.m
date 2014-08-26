@@ -192,6 +192,18 @@ NSString * const SubscriptionType = @"subscription";
 
 #pragma mark - Subscriptions
 
+/**
+ *
+ * 2. Subscriptions
+ *
+ * A subscription says "Joe subscribed to channel Blah". The first part of that 
+ * is creating a CKSubscription object and registering it with the system.
+ * Once that succeeds, we'll stash an info object about our subscription. 
+ * This will let people see who is subscribed.
+ *
+ */
+
+
 - (CKNotificationInfo *)notificationInfoForChannel:(BNRChatChannel*)channel {
     CKNotificationInfo *note = [[CKNotificationInfo alloc] init];
     note.alertBody = @"Alert Body";\
@@ -324,6 +336,13 @@ NSString * const SubscriptionType = @"subscription";
     }];
 }
 
+/**
+ *
+ * 3. Messages
+ *
+ * We gotta talk. 
+ *
+ */
 
 #pragma mark - Messages
 
@@ -396,25 +415,6 @@ NSString * const SubscriptionType = @"subscription";
     NSLog(@"%@", predicate.description);
     CKQuery *query = [[CKQuery alloc] initWithRecordType:MessageType predicate:predicate];
 
-
-    [self.publicDB performQuery:query inZoneWithID:self.publicZone.zoneID completionHandler:^(NSArray *results, NSError *error){
-        if(error) {
-            NSLog(@"Error: %@", error.localizedDescription);
-        }
-        NSMutableArray *arr = [[NSMutableArray alloc] init];
-
-        for (CKRecord *record in results) {
-            BNRChatMessage *msg = [self messageWithRecord:record];
-            [arr addObject:msg];
-        }
-
-        NSArray *sortedArray = [arr sortedArrayUsingComparator:^NSComparisonResult(BNRChatMessage*msg1, BNRChatMessage *msg2){
-            return [msg1.createdDate compare:msg2.createdDate];
-        }];
-        completion(sortedArray, error);
-    }];
-
-    /*
     CKQueryOperation *queryOp = [[CKQueryOperation alloc] initWithQuery:query];
 
     NSMutableArray *arr = [[NSMutableArray alloc] init];
@@ -434,6 +434,14 @@ NSString * const SubscriptionType = @"subscription";
         completion(sortedArray, error);
     };
 
+    [self.publicDB performQuery:query inZoneWithID:self.publicZone.zoneID completionHandler:^(NSArray *results, NSError *error){
+        for (CKRecord *record in results) {
+            queryOp.recordFetchedBlock(record);
+        }
+        queryOp.queryCompletionBlock(nil, error);
+    }];
+
+    /*
     [queryOp start];
      */
 }
