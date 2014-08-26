@@ -59,9 +59,8 @@
 
 - (void)viewDidAppear:(BOOL)animated {
     [BNRCloudStore sharedStore].messageDelegate = self;
+    self.messageTextField.frame = CGRectMake(0, 0, 200, 30);
     self.messageTextField.autoresizingMask = UIViewAutoresizingFlexibleWidth;
-    CGRect f = CGRectMake(0, 0, 200, 30);
-    self.messageTextField.frame = f;
     self.messageTextField.delegate = self;
     UIBarButtonItem *textFieldButton = [[UIBarButtonItem alloc] initWithCustomView:self.messageTextField];
     UIBarButtonItem *sendButton = [[UIBarButtonItem alloc] initWithTitle:@"Send" style:UIBarButtonItemStyleDone target:self action:@selector(sendMessage:)];

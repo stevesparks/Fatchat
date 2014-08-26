@@ -156,16 +156,30 @@ NSString * const SubscriptionType = @"subscription";
 }
 
 - (void)destroyChannel:(BNRChatChannel *)channel {
-    NSPredicate *predicate = [NSPredicate predicateWithFormat:@"channelName = %@", channel.name];
-    CKQuery *query = [[CKQuery alloc] initWithRecordType:MessageType predicate:predicate];
+    [self unsubscribeFromChannel:channel completion:^(BNRChatChannel *channel, NSError *error){
+        NSPredicate *predicate = [NSPredicate predicateWithFormat:@"channelName = %@", channel.name];
+        CKQuery *query = [[CKQuery alloc] initWithRecordType:MessageType predicate:predicate];
+        [self.publicDB performQuery:query inZoneWithID:self.publicZone.zoneID completionHandler:^(NSArray *results, NSError *error){
+            for (CKRecord *record in results) {
+                [self.publicDB deleteRecordWithID:record.recordID completionHandler:^(CKRecordID *recordId, NSError *error){
+                    if(error)
+                        NSLog(@"Error Deleting message %@", error.localizedDescription);
+                }];
+            }
+        }];
 
-    [self.publicDB performQuery:query inZoneWithID:self.publicZone.zoneID completionHandler:^(NSArray *results, NSError *error){
-        for (CKRecord *record in results) {
-            [self.publicDB deleteRecordWithID:record.recordID completionHandler:^(CKRecordID *recordId, NSError *error){
-                NSLog(@"Error Deleting message %@", error.localizedDescription);
-            }];
-        }
+        query = [[CKQuery alloc] initWithRecordType:ChannelCreateType predicate:predicate];
+        [self.publicDB performQuery:query inZoneWithID:self.publicZone.zoneID completionHandler:^(NSArray *results, NSError *error){
+            for (CKRecord *record in results) {
+                [self.publicDB deleteRecordWithID:record.recordID completionHandler:^(CKRecordID *recordId, NSError *error){
+                    if(error)
+                        NSLog(@"Error Deleting channel %@", error.localizedDescription);
+                }];
+            }
+        }];
     }];
+
+
 }
 
 - (BNRChatChannel*)channelWithName:(NSString*)name {
@@ -279,11 +293,17 @@ NSString * const SubscriptionType = @"subscription";
 
 - (void)unsubscribeFromChannel:(BNRChatChannel*)channel completion:(void (^)(BNRChatChannel *, NSError *))completion {
     if(!channel.subscribed) {
+        if(completion) {
+            completion(channel,nil);
+        }
         return;
     }
 
     BNRChannelSubscription *sub = [self subscriptionForChannel:channel];
     if(!sub) {
+        if(completion) {
+            completion(channel,nil);
+        }
         return;
     }
     NSMutableArray *arr = [self.subscriptions mutableCopy];
