@@ -97,6 +97,8 @@
 #pragma mark - utilities
 
 - (void)scrollToBottom {
+    if(!self.messages.count)
+        return;
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
     [self.tableView scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:(self.messages.count-1) inSection:0] atScrollPosition:UITableViewScrollPositionBottom animated:YES];
     });
@@ -253,14 +255,11 @@
 
 #pragma mark - UITextFieldDelegate
 
-- (void)textFieldDidEndEditing:(UITextField *)textField {
+- (BOOL)textFieldShouldReturn:(UITextField *)textField {
+    [textField resignFirstResponder];
     if(textField.text.length) {
         [self sendMessage:nil];
     }
-}
-
-- (BOOL)textFieldShouldReturn:(UITextField *)textField {
-    [textField resignFirstResponder];
     return YES;
 }
 
