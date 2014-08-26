@@ -15,7 +15,6 @@
 
 @interface BNRChannelChatViewController()<UIAlertViewDelegate, UITextFieldDelegate, BNRCloudStoreMessageDelegate>
 @property (strong, nonatomic) NSArray *messages;
-@property (strong, nonatomic) NSString *otherCellText;
 @property (strong, nonatomic) UITextField *messageTextField;
 @property (weak, nonatomic) UIBarButtonItem *sendButton;
 @end
@@ -26,7 +25,6 @@
     self = [super init];
     if(self) {
         self.channel = channel;
-        self.otherCellText = @"New message";
     }
     return self;
 }
@@ -39,14 +37,9 @@
     }
     UIBarButtonItem *refreshButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemRefresh target:self action:@selector(refreshData)];
 
-    self.navigationItem.rightBarButtonItems = @[
-                                                refreshButton,
-                                                ];
+    self.navigationItem.rightBarButtonItem = refreshButton;
 
     self.navigationController.toolbarHidden = NO;
-
-    self.navigationController.toolbarHidden = NO;
-
 
     [self refreshDataWithCompletion:^{
             [self scrollToBottom];
@@ -140,12 +133,10 @@
 - (void)refreshDataWithCompletion:(void(^)(void))completion {
     BNRCloudStore *store = [BNRCloudStore sharedStore];
 
-    self.otherCellText = @"Loading...";
     [self asyncReload];
 
     [store fetchMessagesForChannel:self.channel completion:^(NSArray *messages, NSError *error){
         self.messages = messages;
-        self.otherCellText = @"New message";
         [self asyncReload];
         if(completion)
             completion();
@@ -196,25 +187,13 @@
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     UITableViewCell *cell;
 
-//    if(indexPath.row < self.messages.count) {
-        BNRChatMessageCell *mCell = [tableView dequeueReusableCellWithIdentifier:@"ChatMessageCell"];
-        if(!mCell) {
-            mCell = [BNRChatMessageCell bnr_instantiateCellFromNib];
-        }
-        BNRChatMessage *msg = self.messages[indexPath.row];
-        mCell.message = msg;
-        cell = mCell;
-//    } else {
-//        cell = [tableView dequeueReusableCellWithIdentifier:@"Cell"];
-//        if(!cell) {
-//            cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:@"Cell"];
-//        }
-//        cell.textLabel.text = self.otherCellText;
-//        cell.detailTextLabel.text = nil;
-//        UIButton *button = [UIButton buttonWithType:UIButtonTypeContactAdd];
-//        [button addTarget:self action:@selector(promptForNewMessage) forControlEvents:UIControlEventTouchUpInside];
-//        cell.accessoryView = button;
-//    }
+    BNRChatMessageCell *mCell = [tableView dequeueReusableCellWithIdentifier:@"ChatMessageCell"];
+    if(!mCell) {
+        mCell = [BNRChatMessageCell bnr_instantiateCellFromNib];
+    }
+    BNRChatMessage *msg = self.messages[indexPath.row];
+    mCell.message = msg;
+    cell = mCell;
 
     return cell;
 }
