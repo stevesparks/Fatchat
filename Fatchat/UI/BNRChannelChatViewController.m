@@ -18,7 +18,6 @@
 @property (strong, nonatomic) NSString *otherCellText;
 @property (strong, nonatomic) UITextField *messageTextField;
 @property (weak, nonatomic) UIBarButtonItem *sendButton;
-@property (weak, nonatomic) UIBarButtonItem *subscribeButton;
 @end
 
 @implementation BNRChannelChatViewController
@@ -39,12 +38,9 @@
         self.navigationItem.prompt = @"Subscribed";
     }
     UIBarButtonItem *refreshButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemRefresh target:self action:@selector(refreshData)];
-    UIBarButtonItem *subButton = [[UIBarButtonItem alloc] initWithTitle:[self subscribeButtonTitle] style:UIBarButtonItemStylePlain target:self action:@selector(toggleSubscription)];
-    self.subscribeButton = subButton;
 
     self.navigationItem.rightBarButtonItems = @[
                                                 refreshButton,
-                                                subButton
                                                 ];
 
     self.navigationController.toolbarHidden = NO;
@@ -55,6 +51,20 @@
     [self refreshDataWithCompletion:^{
             [self scrollToBottom];
     }];
+}
+
+- (void)viewWillAppear:(BOOL)animated {
+    [super viewWillAppear:animated];
+    if(!self.channel.subscribed) {
+        [[BNRCloudStore sharedStore] subscribeToChannel:self.channel completion:^(BNRChatChannel *channel, NSError *error){
+            if(error) {
+                NSLog(@"Error %@", error.localizedDescription);
+            } else {
+                self.channel.subscribed = YES;
+            }
+            [self refreshData];
+        }];
+    }
 }
 
 - (void)viewDidAppear:(BOOL)animated {
@@ -78,6 +88,18 @@
                                                 sendButton,
                                                 rightSpace
                                                 ];
+}
+
+- (void)viewWillDisappear:(BOOL)animated {
+    [super viewWillDisappear:animated];
+    [[BNRCloudStore sharedStore] unsubscribeFromChannel:self.channel completion:^(BNRChatChannel *channel, NSError *error){
+        if(error) {
+            NSLog(@"Error %@", error.localizedDescription);
+        } else {
+            self.channel.subscribed = NO;
+        }
+        [self refreshData];
+    }];
 }
 
 - (void)viewDidDisappear:(BOOL)animated {
@@ -108,14 +130,6 @@
     dispatch_async(dispatch_get_main_queue(), ^{
         [self.tableView reloadData];
     });
-}
-
-- (NSString*)subscribeButtonTitle {
-    if([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad) {
-        return (self.channel.subscribed?@"Unsubscribe":@"Subscribe");
-    } else {
-        return (self.channel.subscribed?@"X":@"+");
-    }
 }
 
 - (void)refreshData {
@@ -207,34 +221,6 @@
 
 - (BOOL)tableView:(UITableView *)tableView shouldHighlightRowAtIndexPath:(NSIndexPath *)indexPath {
     return NO;
-}
-
-- (void)toggleSubscription {
-    if(self.channel.subscribed) {
-        self.subscribeButton.title = @"Unsubscribing...";
-        [[BNRCloudStore sharedStore] unsubscribeFromChannel:self.channel completion:^(BNRChatChannel *channel, NSError *error){
-            if(error) {
-                NSLog(@"Error %@", error.localizedDescription);
-                self.subscribeButton.title = @"Error!";
-            } else {
-                self.channel.subscribed = NO;
-                self.subscribeButton.title = [self subscribeButtonTitle];
-            }
-            [self refreshData];
-        }];
-    } else {
-        [[BNRCloudStore sharedStore] subscribeToChannel:self.channel completion:^(BNRChatChannel *channel, NSError *error){
-            self.subscribeButton.title = @"Subscribing...";
-            if(error) {
-                NSLog(@"Error %@", error.localizedDescription);
-                self.subscribeButton.title = @"Error!";
-            } else {
-                self.channel.subscribed = YES;
-                self.subscribeButton.title = [self subscribeButtonTitle];
-            }
-            [self refreshData];
-        }];
-    }
 }
 
 - (void)alertView:(UIAlertView *)alertView didDismissWithButtonIndex:(NSInteger)buttonIndex {
