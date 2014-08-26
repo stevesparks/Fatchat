@@ -37,7 +37,7 @@ NSString * const SubscriptionType = @"subscription";
 }
 @property (copy, nonatomic) NSArray *channels;
 @property (copy, nonatomic) NSArray *subscriptions;
-
+@property (readonly, nonatomic) NSString *deviceId;
 @end
 
 @implementation BNRCloudStore
@@ -72,6 +72,14 @@ NSString * const SubscriptionType = @"subscription";
         _handle = [NSString stringWithFormat:@"Anon %06d", (arc4random()%1000000)];
     }
     return _handle;
+}
+
+- (NSString *)deviceId {
+    static NSString *deviceId = nil;
+    if(!deviceId) {
+        deviceId = [[UIDevice currentDevice] identifierForVendor].UUIDString;
+    }
+    return deviceId;
 }
 
 - (void)setHandle:(NSString *)handle {
@@ -147,6 +155,19 @@ NSString * const SubscriptionType = @"subscription";
     }];
 }
 
+- (void)destroyChannel:(BNRChatChannel *)channel {
+    NSPredicate *predicate = [NSPredicate predicateWithFormat:@"channelName = %@", channel.name];
+    CKQuery *query = [[CKQuery alloc] initWithRecordType:MessageType predicate:predicate];
+
+    [self.publicDB performQuery:query inZoneWithID:self.publicZone.zoneID completionHandler:^(NSArray *results, NSError *error){
+        for (CKRecord *record in results) {
+            [self.publicDB deleteRecordWithID:record.recordID completionHandler:^(CKRecordID *recordId, NSError *error){
+                NSLog(@"Error Deleting message %@", error.localizedDescription);
+            }];
+        }
+    }];
+}
+
 - (BNRChatChannel*)channelWithName:(NSString*)name {
     __block BNRChatChannel *ret = nil;
     [self.channels indexOfObjectPassingTest:^BOOL(id obj, NSUInteger idx, BOOL *stop){
@@ -165,7 +186,7 @@ NSString * const SubscriptionType = @"subscription";
 
 - (CKNotificationInfo *)notificationInfoForChannel:(BNRChatChannel*)channel {
     CKNotificationInfo *note = [[CKNotificationInfo alloc] init];
-    note.alertBody = @"Alert Body";
+    note.alertBody = @"Alert Body";\
     note.shouldBadge = YES;
     note.shouldSendContentAvailable = NO;
     return note;
@@ -197,18 +218,19 @@ NSString * const SubscriptionType = @"subscription";
     CKRecord *record = [[CKRecord alloc] initWithRecordType:SubscriptionType];
     [record setValue:channel.name forKey:ChannelNameKey];
     [record setValue:self.myIdentifier forKey:MyIdentifierKey];
+    [record setValue:self.deviceId forKey:DeviceKey];
     [record setValue:subscription.subscriptionID forKey:SubscriptionKey];
 
     [self.publicDB saveRecord:record completionHandler:^(CKRecord *record, NSError *error){
         if(error) {
             NSLog(@"Error: %@", error.localizedDescription);
         }
-        
     }];
 }
 
 - (void)populateSubscriptionsWithCompletion:(void(^)(NSArray *, NSError *))completion {
-    NSPredicate *predicate = [NSPredicate predicateWithValue:YES];
+    NSPredicate *predicate = [NSPredicate predicateWithFormat:@"device = %@", self.deviceId];
+//    NSPredicate *predicate = [NSPredicate predicateWithValue:YES];
     CKQuery *query = [[CKQuery alloc] initWithRecordType:SubscriptionType predicate:predicate];
 
     CKQueryOperation *queryOp = [[CKQueryOperation alloc] initWithQuery:query];
@@ -268,7 +290,7 @@ NSString * const SubscriptionType = @"subscription";
     [arr removeObject:sub];
     self.subscriptions = arr;
 
-    [self.publicDB deleteSubscriptionWithID:sub.subscription.subscriptionID completionHandler:^(NSString *subscriptionId, NSError *error){
+    [self.publicDB deleteSubscriptionWithID:sub.subscription completionHandler:^(NSString *subscriptionId, NSError *error){
         if(error) {
             NSLog(@"Error: %@", error.localizedDescription);
         }
@@ -292,10 +314,6 @@ NSString * const SubscriptionType = @"subscription";
 #pragma mark - Messages
 
 - (BNRChatMessage*)messageWithRecord:(CKRecord*)record {
-    static NSString *deviceId = nil;
-    if(!deviceId) {
-        deviceId = [[UIDevice currentDevice] identifierForVendor].UUIDString;
-    }
     BNRChatMessage *newMessage = [[BNRChatMessage alloc] init];
     newMessage.message = [record valueForKey:MessageTextKey];
     newMessage.createdDate = record.creationDate;
@@ -305,7 +323,7 @@ NSString * const SubscriptionType = @"subscription";
         newMessage.asset = [record valueForKey:AssetKey];
     }
     NSUUID *uuid = [record valueForKey:DeviceKey];
-    newMessage.fromThisDevice = [uuid isEqual:deviceId];
+    newMessage.fromThisDevice = [uuid isEqual:self.deviceId];
 
     return newMessage;
 }
@@ -403,7 +421,22 @@ NSString * const SubscriptionType = @"subscription";
 }
 
 - (void)didReceiveNotification:(NSDictionary *)notificationInfo {
-    
+    CKQueryNotification *note = [CKQueryNotification notificationFromRemoteNotificationDictionary:notificationInfo];
+    if(!note)
+        return;
+
+    [self.publicDB fetchRecordWithID:note.recordID completionHandler:^(CKRecord *record, NSError *error){
+        BNRChatMessage *msg = [self messageWithRecord:record];
+        BNRChatChannel *channel = [self channelWithName:record[@"channelName"]];
+
+        if([self.messageDelegate respondsToSelector:@selector(cloudStore:didReceiveMessage:onChannel:)]) {
+
+            [self.messageDelegate cloudStore:self didReceiveMessage:msg onChannel:channel];
+        } else {
+            ;
+        }
+    }];
+//    [self.publicDB fetchRecordWithID:recordId completionHandler:^(CKRecordID *recordId, NSError *error) { }];
 }
 
 @end

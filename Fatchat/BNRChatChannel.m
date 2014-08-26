@@ -15,10 +15,11 @@
 }
 
 - (BOOL)isEqual:(id)object {
-    if(![[object class] isKindOfClass:[BNRChatChannel class]]) {
+    if(![object isKindOfClass:[BNRChatChannel class]]) {
         return NO;
     }
     BNRChatChannel *otherChannel = object;
-    return [self.name isEqual:otherChannel.name];}
+    return [self.name isEqual:otherChannel.name];
+}
 
 @end

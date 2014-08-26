@@ -13,7 +13,7 @@
 
 @interface BNRChannelSubscription : NSObject
 @property (weak, nonatomic) BNRChatChannel *channel;
-@property (strong, nonatomic) CKSubscription *subscription;
+@property (strong, nonatomic) NSString *subscription;
 @property (strong, nonatomic) CKRecordID *recordID;
 
 @end

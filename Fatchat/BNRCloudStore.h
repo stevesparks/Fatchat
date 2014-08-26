@@ -29,6 +29,7 @@
 
 - (BOOL) cloudStore:(BNRCloudStore*)store shouldSendMessage:(BNRChatMessage*)messge onChannel:(BNRChatChannel*)channel;
 - (void) cloudStore:(BNRCloudStore*)store didSendMessage:(BNRChatMessage*)message onChannel:(BNRChatChannel*)channel;
+- (void) cloudStore:(BNRCloudStore *)store didReceiveMessage:(BNRChatMessage *)message onChannel:(BNRChatChannel *)channel;
 
 @end
 
@@ -57,6 +58,9 @@
 - (void)subscribeToChannel:(BNRChatChannel *)channel completion:(void(^)(BNRChatChannel *channel, NSError *error))completion;
 - (void)unsubscribeFromChannel:(BNRChatChannel*)channel completion:(void(^)(BNRChatChannel *channel, NSError *error))completion;
 ;
+
+
+- (void)destroyChannel:(BNRChatChannel *)channel;
 
 // "Message for you, sir!"
 - (void)didReceiveNotification:(NSDictionary*)notificationInfo;

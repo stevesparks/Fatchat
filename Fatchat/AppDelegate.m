@@ -7,6 +7,7 @@
 //
 
 #import "AppDelegate.h"
+#import "BNRCloudStore.h"
 
 @interface AppDelegate ()
 
@@ -22,7 +23,7 @@
         [application registerForRemoteNotifications];
     } else {
 
-        [application registerForRemoteNotificationTypes:0xFF];
+//        [application registerForRemoteNotificationTypes:0xFF];
     }
 
     return YES;
@@ -52,7 +53,8 @@
 
 - (void)application:(UIApplication *)application didReceiveRemoteNotification:(NSDictionary *)userInfo fetchCompletionHandler:(void (^)(UIBackgroundFetchResult))completionHandler {
     NSLog(@"%s", __PRETTY_FUNCTION__);
-
+    [[BNRCloudStore sharedStore] didReceiveNotification:userInfo];
+    completionHandler(UIBackgroundFetchResultNoData);
 }
 
 - (void)application:(UIApplication *)application didReceiveRemoteNotification:(NSDictionary *)userInfo {

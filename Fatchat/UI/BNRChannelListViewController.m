@@ -30,14 +30,15 @@ NSString * const CellIdentifier = @"CellIdentifier";
     self.title = @"Fatchat";
 
     UIBarButtonItem *button = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemRefresh target:self action:@selector(refreshData)];
-    self.navigationItem.rightBarButtonItem = button;
+    UIBarButtonItem *handleButton = [[UIBarButtonItem alloc] initWithTitle:@"Me" style:UIBarButtonItemStylePlain target:self action:@selector(promptForNewHandle)];
+
+    self.navigationItem.rightBarButtonItems = @[ button , handleButton ];
 
     self.otherCellLabel = @"Loading...";
 }
 
 - (void)viewDidAppear:(BOOL)animated {
     [super viewDidAppear:animated];
-    NSLog(@"Appear");
 
     [self refreshData];
 }
@@ -46,7 +47,6 @@ NSString * const CellIdentifier = @"CellIdentifier";
 - (void)refreshData {
     self.otherCellLabel = @"Loading...";
     [[BNRCloudStore sharedStore] fetchChannelsWithCompletion:^(NSArray *channels, NSError *error){
-        NSLog(@"Data");
         self.channels = channels;
         self.otherCellLabel = @"Add a new channel";
         dispatch_async(dispatch_get_main_queue(), ^{
@@ -61,6 +61,16 @@ NSString * const CellIdentifier = @"CellIdentifier";
     alertView.alertViewStyle = UIAlertViewStylePlainTextInput;
     [alertView show];
 }
+
+- (void) promptForNewHandle {
+    UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:@"New Handle" message:@"Who will you be?" delegate:self cancelButtonTitle:@"Nevermind" otherButtonTitles:@"Rename Me", nil];
+    alertView.alertViewStyle = UIAlertViewStylePlainTextInput;
+    [alertView show];
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [alertView textFieldAtIndex:0].text = [BNRCloudStore sharedStore].handle;
+    });
+}
+
 
 
 #pragma mark UITableView datasource
@@ -139,18 +149,55 @@ NSString * const CellIdentifier = @"CellIdentifier";
     if(buttonIndex) {
         NSString *channelName = [alertView textFieldAtIndex:0].text;
         if(channelName.length) {
-            [[BNRCloudStore sharedStore] createNewChannel:channelName completion:^(BNRChatChannel *channel, NSError *error){
-                if(channel) {
-                    self.channels = [self.channels arrayByAddingObject:channel];
-                    dispatch_async(dispatch_get_main_queue(), ^{
-                        [self.tableView reloadData];
-                    });
-                }
-            }];
-        }
 
+            if([alertView.title isEqualToString:@"New Handle"]) {
+                [[BNRCloudStore sharedStore] setHandle:channelName];
+            } else {
+
+                [[BNRCloudStore sharedStore] createNewChannel:channelName completion:^(BNRChatChannel *channel, NSError *error){
+                    if(channel) {
+                        self.channels = [self.channels arrayByAddingObject:channel];
+                        dispatch_async(dispatch_get_main_queue(), ^{
+                            [self.tableView reloadData];
+                        });
+                    }
+                }];
+            }
+        }
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+- (BOOL)tableView:(UITableView *)tableView canEditRowAtIndexPath:(NSIndexPath *)indexPath {
+    return (indexPath.section == BNRChannelListTableSectionChannels);
+}
+
+// Override to support editing the table view.
+- (void)tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath {
+    if (editingStyle == UITableViewCellEditingStyleDelete) {
+        BNRChatChannel *channel = self.channels[indexPath.row];
+
+        NSMutableArray *arr = [self.channels mutableCopy];
+        [arr removeObject:channel];
+        self.channels = [arr copy];
+        [self.tableView reloadData];
+
+        [[BNRCloudStore sharedStore] destroyChannel:channel];
+        //add code here for when you hit delete
+    }
+}
+
+
 
 
 @end
