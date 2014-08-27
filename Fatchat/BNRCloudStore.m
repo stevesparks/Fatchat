@@ -14,6 +14,9 @@
 
 #import <CloudKit/CloudKit.h>
 
+#define LOG_ERROR(__STR__)         if(error) { NSLog(@"Error: %@, op = %@", error.localizedDescription, __STR__); }
+
+
 @interface BNRCloudStore()
 @property (strong, nonatomic) CKDatabase *publicDB;
 @property (strong, nonatomic) CKRecordZone *publicZone;
@@ -117,9 +120,7 @@ NSString * const SubscriptionType = @"subscription";
     [record setObject:channelName forKey:ChannelNameKey];
 
     [self.publicDB saveRecord:record completionHandler:^(CKRecord *savedRecord, NSError *error){
-        if(error) {
-            NSLog(@"Error: %@", error.localizedDescription);
-        }
+        LOG_ERROR(@"Creating new channel");
 
         channel.recordID = savedRecord.recordID;
 
@@ -138,9 +139,7 @@ NSString * const SubscriptionType = @"subscription";
     NSPredicate *predicate = [NSPredicate predicateWithValue:YES];
     CKQuery *query = [[CKQuery alloc] initWithRecordType:ChannelCreateType predicate:predicate];
     [self.publicDB performQuery:query inZoneWithID:self.publicZone.zoneID completionHandler:^(NSArray *results, NSError *error){
-        if(error) {
-            NSLog(@"Error: %@", error.localizedDescription);
-        }
+        LOG_ERROR(@"Fetching channels");
         if(results) {
             NSMutableArray *arr = [[NSMutableArray alloc] initWithCapacity:results.count];
             for(CKRecord *record in results) {
@@ -166,8 +165,7 @@ NSString * const SubscriptionType = @"subscription";
         [self.publicDB performQuery:query inZoneWithID:self.publicZone.zoneID completionHandler:^(NSArray *results, NSError *error){
             for (CKRecord *record in results) {
                 [self.publicDB deleteRecordWithID:record.recordID completionHandler:^(CKRecordID *recordId, NSError *error){
-                    if(error)
-                        NSLog(@"Error Deleting channel %@", error.localizedDescription);
+                    LOG_ERROR(@"Deleting channel");
                 }];
             }
         }];
@@ -222,9 +220,7 @@ NSString * const SubscriptionType = @"subscription";
     subscription.notificationInfo = [self notificationInfoForChannel:channel];
 
     [self.publicDB saveSubscription:subscription completionHandler:^(CKSubscription *subscription, NSError *error){
-        if(error) {
-            NSLog(@"Error: %@", error.localizedDescription);
-        }
+        LOG_ERROR(@"subscribing to channel");
         if(subscription) {
             [self recordSubscription:subscription toChannel:channel];
         }
@@ -242,9 +238,7 @@ NSString * const SubscriptionType = @"subscription";
     [record setObject:subscription.subscriptionID forKey:SubscriptionKey];
 
     [self.publicDB saveRecord:record completionHandler:^(CKRecord *record, NSError *error){
-        if(error) {
-            NSLog(@"Error: %@", error.localizedDescription);
-        }
+        LOG_ERROR(@"recording subscription");
     }];
 }
 
@@ -268,9 +262,7 @@ NSString * const SubscriptionType = @"subscription";
     };
 
     queryOp.queryCompletionBlock = ^(CKQueryCursor *cursor, NSError *error) {
-        if(error) {
-            NSLog(@"Error: %@", error.localizedDescription);
-        }
+        LOG_ERROR(@"looking up subscriptions");
         self.subscriptions = [subs copy];
         completion(self.channels, error);
     };
@@ -317,9 +309,7 @@ NSString * const SubscriptionType = @"subscription";
     self.subscriptions = arr;
 
     [self.publicDB deleteSubscriptionWithID:sub.subscription completionHandler:^(NSString *subscriptionId, NSError *error){
-        if(error) {
-            NSLog(@"Error: %@", error.localizedDescription);
-        }
+        LOG_ERROR(@"unsubscribing from channel");
         [self deleteSubscriptionRecord:sub];
         if(completion) {
             completion(channel, error);
@@ -329,10 +319,7 @@ NSString * const SubscriptionType = @"subscription";
 
 - (void)deleteSubscriptionRecord:(BNRChannelSubscription *)channelSubscription {
     [self.publicDB deleteRecordWithID:channelSubscription.recordID completionHandler:^(CKRecordID *id, NSError *error){
-        if(error) {
-            NSLog(@"Error: %@", error.localizedDescription);
-        }
-
+        LOG_ERROR(@"removing subscription record");
     }];
 }
 
@@ -398,9 +385,7 @@ NSString * const SubscriptionType = @"subscription";
     }
 
     [self.publicDB saveRecord:record completionHandler:^(CKRecord *record, NSError *error){
-        if(error) {
-            NSLog(@"Error: %@", error.localizedDescription);
-        }
+        LOG_ERROR(@"Creating new message");
         if(completion) {
             completion(message, error);
         }
@@ -428,9 +413,7 @@ NSString * const SubscriptionType = @"subscription";
     };
 
     queryOp.queryCompletionBlock = ^(CKQueryCursor *cursor, NSError *error) {
-        if(error) {
-            NSLog(@"Error: %@", error.localizedDescription);
-        }
+        LOG_ERROR(@"fetching messages");
         NSArray *sortedArray = [arr sortedArrayUsingComparator:^NSComparisonResult(BNRChatMessage*msg1, BNRChatMessage *msg2){
             return [msg1.createdDate compare:msg2.createdDate];
         }];
