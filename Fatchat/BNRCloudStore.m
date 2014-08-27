@@ -57,6 +57,9 @@ NSString * const SubscriptionType = @"subscription";
         self.publicDB = [[CKContainer defaultContainer] publicCloudDatabase];
         self.publicZone = nil;
         self.handle = [[NSUserDefaults standardUserDefaults] valueForKey:SenderKey];
+
+        // Clean up notes
+        [self markNotesRead];
     }
     return self;
 }
@@ -131,6 +134,7 @@ NSString * const SubscriptionType = @"subscription";
 }
 
 - (void)fetchChannelsWithCompletion:(void (^)(NSArray *, NSError *))completion {
+
     NSPredicate *predicate = [NSPredicate predicateWithValue:YES];
     CKQuery *query = [[CKQuery alloc] initWithRecordType:ChannelCreateType predicate:predicate];
     [self.publicDB performQuery:query inZoneWithID:self.publicZone.zoneID completionHandler:^(NSArray *results, NSError *error){
@@ -445,6 +449,22 @@ NSString * const SubscriptionType = @"subscription";
      */
 }
 
+#pragma mark - NSNotification stuff
+
+- (void)markNotesRead {
+    CKFetchNotificationChangesOperation *op = [[CKFetchNotificationChangesOperation alloc] init];
+    NSMutableArray *noteIds = [[NSMutableArray alloc] init];
+    op.notificationChangedBlock = ^(CKNotification *note) {
+        [noteIds addObject:note.notificationID];
+    };
+    op.completionBlock = ^{
+        CKMarkNotificationsReadOperation *mark = [[CKMarkNotificationsReadOperation alloc] initWithNotificationIDsToMarkRead:[noteIds copy]];
+        [mark start];
+    };
+    [op start];
+
+}
+
 - (void)didReceiveNotification:(NSDictionary *)notificationInfo {
     CKQueryNotification *note = [CKQueryNotification notificationFromRemoteNotificationDictionary:notificationInfo];
     if(!note)
@@ -461,6 +481,7 @@ NSString * const SubscriptionType = @"subscription";
             ;
         }
     }];
+    [self markNotesRead];
 //    [self.publicDB fetchRecordWithID:recordId completionHandler:^(CKRecordID *recordId, NSError *error) { }];
 }
 
