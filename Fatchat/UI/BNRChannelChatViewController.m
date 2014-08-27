@@ -85,11 +85,10 @@
 
 - (void)viewWillDisappear:(BOOL)animated {
     [super viewWillDisappear:animated];
+    self.channel.subscribed = NO;
     [[BNRCloudStore sharedStore] unsubscribeFromChannel:self.channel completion:^(BNRChatChannel *channel, NSError *error){
         if(error) {
             NSLog(@"Error %@", error.localizedDescription);
-        } else {
-            self.channel.subscribed = NO;
         }
         [self refreshData];
     }];

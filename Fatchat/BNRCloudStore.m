@@ -137,9 +137,8 @@ NSString * const SubscriptionType = @"subscription";
         if(error) {
             NSLog(@"Error: %@", error.localizedDescription);
         }
-        NSMutableArray *arr = nil;
         if(results) {
-            arr = [[NSMutableArray alloc] initWithCapacity:results.count];
+            NSMutableArray *arr = [[NSMutableArray alloc] initWithCapacity:results.count];
             for(CKRecord *record in results) {
                 BNRChatChannel *channel = [[BNRChatChannel alloc] init];
                 channel.name = [record objectForKey:ChannelNameKey];
@@ -147,12 +146,12 @@ NSString * const SubscriptionType = @"subscription";
                 channel.recordID = record.recordID;
                 [arr addObject:channel];
             }
+            // Sort by created date
+            self.channels = [arr sortedArrayUsingComparator:^NSComparisonResult(BNRChatChannel *channel1, BNRChatChannel *channel2){
+                return [channel1.createdDate compare:channel2.createdDate];
+            }]; // property type `copy`
         }
-
-        // Sort by created date
-        self.channels = [arr sortedArrayUsingComparator:^NSComparisonResult(BNRChatChannel *channel1, BNRChatChannel *channel2){
-            return [channel1.createdDate compare:channel2.createdDate];
-        }]; // property type `copy`
+        completion(self.channels, error);
     }];
 }
 
@@ -358,7 +357,10 @@ NSString * const SubscriptionType = @"subscription";
     return newMessage;
 }
 
-- (void)createNewMessageWithText:(NSString *)text assetFileUrl:(NSURL *)assetFileUrl assetType:(BNRChatMessageAssetType)assetType channel:(BNRChatChannel*)channel completion:(void (^)(BNRChatMessage *, NSError *))completion {
+- (void)createNewMessageWithText:(NSString *)text assetFileUrl:(NSURL *)assetFileUrl
+                       assetType:(BNRChatMessageAssetType)assetType
+                         channel:(BNRChatChannel*)channel
+                      completion:(void (^)(BNRChatMessage *, NSError *))completion {
     NSParameterAssert(channel);
     NSParameterAssert(text);
 
