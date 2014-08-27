@@ -286,13 +286,16 @@ NSString * const SubscriptionType = @"subscription";
     };
 
     //    [queryOp start];
-
+#ifdef ONE_SHOT_QUERIES
     [self.publicDB performQuery:query inZoneWithID:self.publicZone.zoneID completionHandler:^(NSArray *results, NSError *error){
         for(CKRecord *record in results) {
             queryOp.recordFetchedBlock(record);
         }
         queryOp.queryCompletionBlock(nil, error);
     }];
+#else
+    [self.publicDB addOperation:queryOp];
+#endif
 }
 
 - (BNRChannelSubscription*)subscriptionForChannel:(BNRChatChannel*)channel {
@@ -438,7 +441,7 @@ NSString * const SubscriptionType = @"subscription";
         completion(sortedArray, error);
     };
 
-#if ONE_SHOT_QUERIES
+#ifdef ONE_SHOT_QUERIES
     [self.publicDB performQuery:query inZoneWithID:self.publicZone.zoneID completionHandler:^(NSArray *results, NSError *error){
         for (CKRecord *record in results) {
             queryOp.recordFetchedBlock(record);
@@ -446,7 +449,7 @@ NSString * const SubscriptionType = @"subscription";
         queryOp.queryCompletionBlock(nil, error);
     }];
 #else
-    [queryOp start];
+    [self.publicDB addOperation:queryOp];
 #endif
 
 }
