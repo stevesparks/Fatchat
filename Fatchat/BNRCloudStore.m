@@ -111,14 +111,14 @@ NSString * const SubscriptionType = @"subscription";
     }
 
     CKRecord *record = [[CKRecord alloc] initWithRecordType:ChannelCreateType];
-    [record setValue:channelName forKey:ChannelNameKey];
+    [record setObject:channelName forKey:ChannelNameKey];
 
     [self.publicDB saveRecord:record completionHandler:^(CKRecord *savedRecord, NSError *error){
         if(error) {
             NSLog(@"Error: %@", error.localizedDescription);
         }
 
-        channel.recordID = record.recordID;
+        channel.recordID = savedRecord.recordID;
 
         if(!savedRecord) {
             channel = nil;
@@ -142,7 +142,7 @@ NSString * const SubscriptionType = @"subscription";
             arr = [[NSMutableArray alloc] initWithCapacity:results.count];
             for(CKRecord *record in results) {
                 BNRChatChannel *channel = [[BNRChatChannel alloc] init];
-                channel.name = [record valueForKey:ChannelNameKey];
+                channel.name = [record objectForKey:ChannelNameKey];
                 channel.createdDate = record.creationDate;
                 channel.recordID = record.recordID;
                 [arr addObject:channel];
@@ -153,9 +153,6 @@ NSString * const SubscriptionType = @"subscription";
         self.channels = [arr sortedArrayUsingComparator:^NSComparisonResult(BNRChatChannel *channel1, BNRChatChannel *channel2){
             return [channel1.createdDate compare:channel2.createdDate];
         }]; // property type `copy`
-
-//        completion(self.channels, error);
-        [self populateSubscriptionsWithCompletion:completion];
     }];
 }
 
@@ -236,10 +233,10 @@ NSString * const SubscriptionType = @"subscription";
 
 - (void)recordSubscription:(CKSubscription *)subscription toChannel:(BNRChatChannel*)channel {
     CKRecord *record = [[CKRecord alloc] initWithRecordType:SubscriptionType];
-    [record setValue:channel.name forKey:ChannelNameKey];
-    [record setValue:self.myIdentifier forKey:MyIdentifierKey];
-    [record setValue:self.deviceId forKey:DeviceKey];
-    [record setValue:subscription.subscriptionID forKey:SubscriptionKey];
+    [record setObject:channel.name forKey:ChannelNameKey];
+    [record setObject:self.myIdentifier forKey:MyIdentifierKey];
+    [record setObject:self.deviceId forKey:DeviceKey];
+    [record setObject:subscription.subscriptionID forKey:SubscriptionKey];
 
     [self.publicDB saveRecord:record completionHandler:^(CKRecord *record, NSError *error){
         if(error) {
@@ -256,14 +253,14 @@ NSString * const SubscriptionType = @"subscription";
     CKQueryOperation *queryOp = [[CKQueryOperation alloc] initWithQuery:query];
     NSMutableArray *subs = [[NSMutableArray alloc] init];
     queryOp.recordFetchedBlock = ^(CKRecord *record) {
-        NSString *channelName = [record valueForKey:ChannelNameKey];
+        NSString *channelName = [record objectForKey:ChannelNameKey];
         BNRChatChannel *channel = [self channelWithName:channelName];
         channel.subscribed = YES;
 
         BNRChannelSubscription *sub = [[BNRChannelSubscription alloc] init];
         sub.recordID = record.recordID;
         sub.channel = channel;
-        sub.subscription = [record valueForKey:SubscriptionKey];
+        sub.subscription = [record objectForKey:SubscriptionKey];
         [subs addObject:sub];
     };
 
@@ -348,14 +345,14 @@ NSString * const SubscriptionType = @"subscription";
 
 - (BNRChatMessage*)messageWithRecord:(CKRecord*)record {
     BNRChatMessage *newMessage = [[BNRChatMessage alloc] init];
-    newMessage.message = [record valueForKey:MessageTextKey];
+    newMessage.message = [record objectForKey:MessageTextKey];
     newMessage.createdDate = record.creationDate;
-    newMessage.assetType = [[record valueForKey:AssetTypeKey] integerValue];
-    newMessage.senderName = [record valueForKey:SenderKey];
+    newMessage.assetType = [[record objectForKey:AssetTypeKey] integerValue];
+    newMessage.senderName = [record objectForKey:SenderKey];
     if(newMessage.assetType != BNRChatMessageAssetTypeNone) {
-        newMessage.asset = [record valueForKey:AssetKey];
+        newMessage.asset = [record objectForKey:AssetKey];
     }
-    NSUUID *uuid = [record valueForKey:DeviceKey];
+    NSUUID *uuid = [record objectForKey:DeviceKey];
     newMessage.fromThisDevice = [uuid isEqual:self.deviceId];
 
     return newMessage;
@@ -369,20 +366,20 @@ NSString * const SubscriptionType = @"subscription";
     CKRecord *record = [[CKRecord alloc] initWithRecordType:MessageType];
 
     // Set the basic values
-    [record setValue:text forKey:MessageTextKey];
-    [record setValue:channel.name forKey:ChannelNameKey];
-    [record setValue:self.handle forKey:SenderKey];
-    [record setValue:[[UIDevice currentDevice] identifierForVendor].UUIDString forKey:DeviceKey];
+    [record setObject:text forKey:MessageTextKey];
+    [record setObject:channel.name forKey:ChannelNameKey];
+    [record setObject:self.handle forKey:SenderKey];
+    [record setObject:[[UIDevice currentDevice] identifierForVendor].UUIDString forKey:DeviceKey];
 
     // Make sure the objects delete when the DB record is deleted.
     CKReference *ref = [[CKReference alloc] initWithRecordID:channel.recordID action:CKReferenceActionDeleteSelf];
-    [record setValue:ref forKey:ChannelReferenceKey];
+    [record setObject:ref forKey:ChannelReferenceKey];
     
     // Attach an asset if given one.
     if(assetFileUrl) {
         CKAsset *asset = [[CKAsset alloc] initWithFileURL:assetFileUrl];
-        [record setValue:@(assetType) forKey:AssetTypeKey];
-        [record setValue:asset forKey:AssetKey];
+        [record setObject:@(assetType) forKey:AssetTypeKey];
+        [record setObject:asset forKey:AssetKey];
     }
 
     BNRChatMessage *message = [self messageWithRecord:record];
