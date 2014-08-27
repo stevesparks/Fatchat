@@ -31,6 +31,7 @@ NSString * const MyIdentifierKey = @"myIdentifier";
 NSString * const SubscriptionKey = @"subscription";
 NSString * const SenderKey = @"sender";
 NSString * const DeviceKey = @"device";
+NSString * const ServerChangeTokenKey = @"serverChangeToken";
 
 NSString * const ChannelCreateType = @"channel";
 NSString * const MessageType = @"message";
@@ -42,6 +43,7 @@ NSString * const SubscriptionType = @"subscription";
 @property (copy, nonatomic) NSArray *channels;
 @property (copy, nonatomic) NSArray *subscriptions;
 @property (readonly, nonatomic) NSString *deviceId;
+@property (nonatomic) CKServerChangeToken *notificationToken;
 @end
 
 @implementation BNRCloudStore
@@ -92,6 +94,22 @@ NSString * const SubscriptionType = @"subscription";
 - (void)setHandle:(NSString *)handle {
     [[NSUserDefaults standardUserDefaults] setValue:handle forKey:SenderKey];
     _handle = handle;
+}
+
+- (CKServerChangeToken *)notificationToken {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    NSData *data = [defaults objectForKey:ServerChangeTokenKey];
+    CKServerChangeToken *token = nil;
+    if(data) {
+        token = [NSKeyedUnarchiver unarchiveObjectWithData:data];
+    }
+    return token;
+}
+
+- (void)setNotificationToken:(CKServerChangeToken *)notificationToken {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    NSData *data = [NSKeyedArchiver archivedDataWithRootObject:notificationToken];
+    [defaults setObject:data forKey:ServerChangeTokenKey];
 }
 
 #pragma mark - Channels
@@ -420,32 +438,42 @@ NSString * const SubscriptionType = @"subscription";
         completion(sortedArray, error);
     };
 
+#if ONE_SHOT_QUERIES
     [self.publicDB performQuery:query inZoneWithID:self.publicZone.zoneID completionHandler:^(NSArray *results, NSError *error){
         for (CKRecord *record in results) {
             queryOp.recordFetchedBlock(record);
         }
         queryOp.queryCompletionBlock(nil, error);
     }];
-
-    /*
+#else
     [queryOp start];
-     */
+#endif
+
 }
 
 #pragma mark - NSNotification stuff
 
+
 - (void)markNotesRead {
-    CKFetchNotificationChangesOperation *op = [[CKFetchNotificationChangesOperation alloc] init];
+    CKServerChangeToken *token = self.notificationToken;
+    CKFetchNotificationChangesOperation *op = [[CKFetchNotificationChangesOperation alloc] initWithPreviousServerChangeToken:token];
+
     NSMutableArray *noteIds = [[NSMutableArray alloc] init];
     op.notificationChangedBlock = ^(CKNotification *note) {
-        [noteIds addObject:note.notificationID];
+        CKNotificationID *noteId = note.notificationID;
+        [noteIds addObject:noteId];
     };
-    op.completionBlock = ^{
+    op.fetchNotificationChangesCompletionBlock = ^(CKServerChangeToken *token, NSError *error) {
+        LOG_ERROR(@"fetching notifications");
         CKMarkNotificationsReadOperation *mark = [[CKMarkNotificationsReadOperation alloc] initWithNotificationIDsToMarkRead:[noteIds copy]];
+
+        mark.markNotificationsReadCompletionBlock = ^(NSArray *notes, NSError *error){
+            LOG_ERROR(@"marking notifications read");
+        };
         [mark start];
+        self.notificationToken = token;
     };
     [op start];
-
 }
 
 - (void)didReceiveNotification:(NSDictionary *)notificationInfo {
