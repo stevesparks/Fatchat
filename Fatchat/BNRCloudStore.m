@@ -59,10 +59,14 @@ NSString * const SubscriptionType = @"subscription";
 - (instancetype)init {
     self = [super init];
     if(self) {
-        self.publicDB = [[CKContainer defaultContainer] publicCloudDatabase];
+        CKContainer *container = [CKContainer defaultContainer];
+        self.publicDB = [container publicCloudDatabase];
         self.publicZone = nil;
         self.handle = [[NSUserDefaults standardUserDefaults] valueForKey:SenderKey];
 
+        [container requestApplicationPermission:CKApplicationPermissionUserDiscoverability completionHandler:^(CKApplicationPermissionStatus status, NSError *error){
+            LOG_ERROR(@"requesting application permission");
+        }];
         // Clean up notes
         [self markNotesRead];
     }
