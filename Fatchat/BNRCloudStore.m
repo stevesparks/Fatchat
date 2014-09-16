@@ -16,10 +16,14 @@
 
 #define LOG_ERROR(__STR__)         if(error) { NSLog(@"Error: %@, op = %@", error.localizedDescription, __STR__); }
 
+#define ONE_SHOT_QUERIES
 
 @interface BNRCloudStore()
 @property (strong, nonatomic) CKDatabase *publicDB;
 @property (strong, nonatomic) CKRecordZone *publicZone;
+@property (strong, nonatomic) CKDiscoveredUserInfo *me;
+@property (strong, nonatomic) CKRecordID *myRecordId;
+@property (strong, nonatomic) CKRecord *myRecord;
 @end
 
 NSString * const ChannelNameKey = @"channelName";
@@ -40,6 +44,7 @@ NSString * const SubscriptionType = @"subscription";
 @interface BNRCloudStore() {
     NSString *_handle;
 }
+@property (nonatomic) CKApplicationPermissionStatus permissionStatus;
 @property (copy, nonatomic) NSArray *channels;
 @property (copy, nonatomic) NSArray *subscriptions;
 @property (readonly, nonatomic) NSString *deviceId;
@@ -62,27 +67,86 @@ NSString * const SubscriptionType = @"subscription";
         CKContainer *container = [CKContainer defaultContainer];
         self.publicDB = [container publicCloudDatabase];
         self.publicZone = nil;
+
         self.handle = [[NSUserDefaults standardUserDefaults] valueForKey:SenderKey];
 
         [container requestApplicationPermission:CKApplicationPermissionUserDiscoverability completionHandler:^(CKApplicationPermissionStatus status, NSError *error){
+            self.permissionStatus = status;
+
+            if(self.permissionStatus == CKApplicationPermissionStatusGranted)
+                [self findMeWithCompletion:nil];
+
             LOG_ERROR(@"requesting application permission");
         }];
+
+        [self findMeWithCompletion:nil];
         // Clean up notes
         [self markNotesRead];
     }
     return self;
 }
 
+- (CKDiscoveredUserInfo *)findMeWithCompletion:(void(^)(CKDiscoveredUserInfo*info, NSError *error))completion {
+    if(!self.me) {
+        CKContainer *container = [CKContainer defaultContainer];
+
+        void(^fetchedMyRecord)(CKRecord *record, NSError *error) = ^(CKRecord *userRecord, NSError *error) {
+            LOG_ERROR(@"fetching my own record");
+            self.myRecord = userRecord;
+            userRecord[@"firstName"] = self.me.firstName;
+            userRecord[@"lastName"] = self.me.lastName;
+            [self.publicDB saveRecord:userRecord completionHandler:^(CKRecord *record, NSError *error){
+                LOG_ERROR(@"attaching my values");
+                NSLog(@"Saved record ID %@", record.recordID);
+            }];
+        };
+
+
+        void (^discovered)(NSArray *, NSError *) = ^(NSArray *userInfo, NSError *error) {
+            LOG_ERROR(@"discovering users");
+            CKDiscoveredUserInfo *me = [userInfo firstObject];
+            self.myRecordId = me.userRecordID;
+            if(me) {
+                NSLog(@"Me = %@ %@ %@", me.firstName, me.lastName, me.userRecordID.debugDescription);
+
+                [self.publicDB fetchRecordWithID:self.myRecordId completionHandler:fetchedMyRecord];
+            }
+            self.me = me;
+            // If someone wanted a callback, here's how they get it.
+            if(completion) {
+                completion(me, error);
+            }
+        };
+
+
+        if(self.permissionStatus == CKApplicationPermissionStatusGranted) {
+            [container discoverAllContactUserInfosWithCompletionHandler:discovered];
+        } else {
+            if(completion) {
+                completion(self.me, nil);
+            }
+        }
+    } else {
+        if(completion) {
+            completion(self.me, nil);
+        }
+    }
+    return self.me;
+}
+
 - (NSString *)myIdentifier {
     if(!_myIdentifier) {
-        _myIdentifier = [[UIDevice currentDevice] identifierForVendor].UUIDString;
+        _myIdentifier = self.deviceId;
     }
     return _myIdentifier;
 }
 
 - (NSString *)handle {
     if(!_handle) {
-        _handle = [NSString stringWithFormat:@"Anon %06d", (arc4random()%1000000)];
+        if(_me)
+            _handle = [NSString stringWithFormat:@"%@ %@", _me.firstName, _me.lastName];
+        else
+            _handle = [NSString stringWithFormat:@"Anon %06d", (arc4random()%1000000)];
     }
     return _handle;
 }
@@ -139,7 +203,7 @@ NSString * const SubscriptionType = @"subscription";
     }
 
     CKRecord *record = [[CKRecord alloc] initWithRecordType:ChannelCreateType];
-    [record setObject:channelName forKey:ChannelNameKey];
+    record[ChannelNameKey] = channelName;
 
     [self.publicDB saveRecord:record completionHandler:^(CKRecord *savedRecord, NSError *error){
         LOG_ERROR(@"Creating new channel");
@@ -176,7 +240,8 @@ NSString * const SubscriptionType = @"subscription";
                 return [channel1.createdDate compare:channel2.createdDate];
             }]; // property type `copy`
         }
-        completion(self.channels, error);
+//        completion(self.channels, error);
+        [self populateSubscriptionsWithCompletion:completion];
     }];
 }
 
@@ -226,15 +291,24 @@ NSString * const SubscriptionType = @"subscription";
 
 - (CKNotificationInfo *)notificationInfoForChannel:(BNRChatChannel*)channel {
     CKNotificationInfo *note = [[CKNotificationInfo alloc] init];
-    note.alertBody = @"Alert Body";\
+    note.alertLocalizationKey = @"%@: %@ (in %@)";
+    note.alertLocalizationArgs = @[
+                                   SenderKey,
+                                   MessageTextKey,
+                                   ChannelNameKey
+                                   ];
     note.shouldBadge = YES;
-    note.shouldSendContentAvailable = NO;
+    note.shouldSendContentAvailable = YES;
     return note;
 }
 
 - (void)subscribeToChannel:(BNRChatChannel *)channel completion:(void (^)(BNRChatChannel *, NSError *))completion {
-    if(channel.subscribed)
+    if(channel.subscribed) {
+        if(completion) {
+            completion(channel, nil);
+        }
         return;
+    }
 
     NSPredicate *predicate = [NSPredicate predicateWithFormat:@"channelName = %@", channel.name];
     CKSubscription *subscription = [[CKSubscription alloc] initWithRecordType:MessageType predicate:predicate options:CKSubscriptionOptionsFiresOnRecordCreation];
@@ -256,11 +330,17 @@ NSString * const SubscriptionType = @"subscription";
     CKRecord *record = [[CKRecord alloc] initWithRecordType:SubscriptionType];
     [record setObject:channel.name forKey:ChannelNameKey];
     [record setObject:self.myIdentifier forKey:MyIdentifierKey];
+    [record setObject:self.handle forKeyedSubscript:SenderKey];
     [record setObject:self.deviceId forKey:DeviceKey];
+    CKReference *channelRef = [[CKReference alloc] initWithRecordID:channel.recordID action:CKReferenceActionDeleteSelf];
+    [record setValue:channelRef forKey:ChannelReferenceKey];
     [record setObject:subscription.subscriptionID forKey:SubscriptionKey];
 
     [self.publicDB saveRecord:record completionHandler:^(CKRecord *record, NSError *error){
         LOG_ERROR(@"recording subscription");
+        // This may be the first record a user has created. Let's run the "findMe" logic
+        // to ensure that, if we didn't have a user record before, we will now.
+        [self findMeWithCompletion:nil];
     }];
 }
 
@@ -280,6 +360,7 @@ NSString * const SubscriptionType = @"subscription";
         sub.recordID = record.recordID;
         sub.channel = channel;
         sub.subscription = [record objectForKey:SubscriptionKey];
+
         [subs addObject:sub];
     };
 
@@ -321,6 +402,7 @@ NSString * const SubscriptionType = @"subscription";
         }
         return;
     }
+    channel.subscribed = NO;
 
     BNRChannelSubscription *sub = [self subscriptionForChannel:channel];
     if(!sub) {
@@ -367,6 +449,7 @@ NSString * const SubscriptionType = @"subscription";
     if(newMessage.assetType != BNRChatMessageAssetTypeNone) {
         newMessage.asset = [record objectForKey:AssetKey];
     }
+    newMessage.recordID = record.recordID;
     NSUUID *uuid = [record objectForKey:DeviceKey];
     newMessage.fromThisDevice = [uuid isEqual:self.deviceId];
 
@@ -426,7 +509,6 @@ NSString * const SubscriptionType = @"subscription";
 - (void)fetchMessagesForChannel:(BNRChatChannel *)channel completion:(void (^)(NSArray *, NSError *))completion {
     NSPredicate *predicate = [NSPredicate predicateWithFormat:@"channelName = %@", channel.name];
 //    NSPredicate *predicate = [NSPredicate predicateWithValue:YES];
-    NSLog(@"%@", predicate.description);
     CKQuery *query = [[CKQuery alloc] initWithRecordType:MessageType predicate:predicate];
 
     CKQueryOperation *queryOp = [[CKQueryOperation alloc] initWithQuery:query];
@@ -481,7 +563,11 @@ NSString * const SubscriptionType = @"subscription";
         [mark start];
         self.notificationToken = token;
     };
-    [op start];
+    [[CKContainer defaultContainer] addOperation:op];
+
+    // set the badge to zero too
+    CKModifyBadgeOperation *badgeOp =  [[CKModifyBadgeOperation alloc] initWithBadgeValue:0];
+    [[CKContainer defaultContainer] addOperation:badgeOp];
 }
 
 - (void)didReceiveNotification:(NSDictionary *)notificationInfo {

@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0E029C3519BDCAE900B4AD78 /* BNRAutoFlexibleTextCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 0E029C3319BDCAE900B4AD78 /* BNRAutoFlexibleTextCell.m */; };
+		0E029C3619BDCAE900B4AD78 /* BNRAutoFlexibleTextCell.xib in Resources */ = {isa = PBXBuildFile; fileRef = 0E029C3419BDCAE900B4AD78 /* BNRAutoFlexibleTextCell.xib */; };
 		0E0DA8BC19AB56B300BCE955 /* BNRChannelSettingsViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 0E0DA8BA19AB56B300BCE955 /* BNRChannelSettingsViewController.m */; };
 		0E0DA8BD19AB56B300BCE955 /* BNRChannelSettingsViewController.xib in Resources */ = {isa = PBXBuildFile; fileRef = 0E0DA8BB19AB56B300BCE955 /* BNRChannelSettingsViewController.xib */; };
 		0E3CA3AB19A7696000A6AA21 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 0E3CA3AA19A7696000A6AA21 /* main.m */; };
@@ -37,6 +39,9 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		0E029C3219BDCAE900B4AD78 /* BNRAutoFlexibleTextCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BNRAutoFlexibleTextCell.h; sourceTree = "<group>"; };
+		0E029C3319BDCAE900B4AD78 /* BNRAutoFlexibleTextCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = BNRAutoFlexibleTextCell.m; sourceTree = "<group>"; };
+		0E029C3419BDCAE900B4AD78 /* BNRAutoFlexibleTextCell.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = BNRAutoFlexibleTextCell.xib; sourceTree = "<group>"; };
 		0E0DA8B919AB56B300BCE955 /* BNRChannelSettingsViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BNRChannelSettingsViewController.h; sourceTree = "<group>"; };
 		0E0DA8BA19AB56B300BCE955 /* BNRChannelSettingsViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = BNRChannelSettingsViewController.m; sourceTree = "<group>"; };
 		0E0DA8BB19AB56B300BCE955 /* BNRChannelSettingsViewController.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = BNRChannelSettingsViewController.xib; sourceTree = "<group>"; };
@@ -167,6 +172,9 @@
 				0E0DA8B919AB56B300BCE955 /* BNRChannelSettingsViewController.h */,
 				0E0DA8BA19AB56B300BCE955 /* BNRChannelSettingsViewController.m */,
 				0E0DA8BB19AB56B300BCE955 /* BNRChannelSettingsViewController.xib */,
+				0E029C3219BDCAE900B4AD78 /* BNRAutoFlexibleTextCell.h */,
+				0E029C3319BDCAE900B4AD78 /* BNRAutoFlexibleTextCell.m */,
+				0E029C3419BDCAE900B4AD78 /* BNRAutoFlexibleTextCell.xib */,
 			);
 			name = UI;
 			sourceTree = "<group>";
@@ -233,7 +241,7 @@
 				TargetAttributes = {
 					0E3CA3A419A7696000A6AA21 = {
 						CreatedOnToolsVersion = 6.0;
-						DevelopmentTeam = 439592V3LM;
+						DevelopmentTeam = LPR82YBESG;
 						SystemCapabilities = {
 							com.apple.BackgroundModes = {
 								enabled = 1;
@@ -276,6 +284,7 @@
 			files = (
 				0E0DA8BD19AB56B300BCE955 /* BNRChannelSettingsViewController.xib in Resources */,
 				0E3CA3B419A7696100A6AA21 /* Main.storyboard in Resources */,
+				0E029C3619BDCAE900B4AD78 /* BNRAutoFlexibleTextCell.xib in Resources */,
 				0E3CA3B619A7696100A6AA21 /* Images.xcassets in Resources */,
 				0EC0BAB419AB354200CDCC15 /* BNRChatMessageCell.xib in Resources */,
 			);
@@ -299,6 +308,7 @@
 				0E3CA3D919A76B8900A6AA21 /* BNRChatMessage.m in Sources */,
 				0E3CA3AE19A7696000A6AA21 /* AppDelegate.m in Sources */,
 				0EC0BAB219AB351300CDCC15 /* BNRChatMessageCell.m in Sources */,
+				0E029C3519BDCAE900B4AD78 /* BNRAutoFlexibleTextCell.m in Sources */,
 				0EC0BAB719AB368800CDCC15 /* UITableViewCell+BNRAdditions.m in Sources */,
 				0E3CA3E819A7B38700A6AA21 /* BNRChannelChatViewController.m in Sources */,
 				0E0DA8BC19AB56B300BCE955 /* BNRChannelSettingsViewController.m in Sources */,

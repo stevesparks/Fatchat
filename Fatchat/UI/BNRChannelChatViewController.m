@@ -11,6 +11,8 @@
 #import "BNRChatChannel.h"
 #import "BNRChatMessage.h"
 #import "BNRChatMessageCell.h"
+#import "BNRAutoFlexibleTextCell.h"
+#import <CloudKit/CloudKit.h>
 #import "UITableViewCell+BNRAdditions.h"
 
 @interface BNRChannelChatViewController()<UIAlertViewDelegate, UITextFieldDelegate, BNRCloudStoreMessageDelegate>
@@ -31,10 +33,6 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    self.title = self.channel.name;
-    if(self.channel.subscribed) {
-        self.navigationItem.prompt = @"Subscribed";
-    }
     UIBarButtonItem *refreshButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemRefresh target:self action:@selector(refreshData)];
 
     self.navigationItem.rightBarButtonItem = refreshButton;
@@ -64,6 +62,9 @@
     [BNRCloudStore sharedStore].messageDelegate = self;
     self.messageTextField.frame = CGRectMake(0, 0, 200, 30);
     self.messageTextField.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+    self.messageTextField.autocapitalizationType = UITextAutocapitalizationTypeNone;
+    self.messageTextField.autocorrectionType = UITextAutocorrectionTypeNo;
+
     self.messageTextField.delegate = self;
     UIBarButtonItem *textFieldButton = [[UIBarButtonItem alloc] initWithCustomView:self.messageTextField];
     UIBarButtonItem *sendButton = [[UIBarButtonItem alloc] initWithTitle:@"Send" style:UIBarButtonItemStyleDone target:self action:@selector(sendMessage:)];
@@ -85,11 +86,11 @@
 
 - (void)viewWillDisappear:(BOOL)animated {
     [super viewWillDisappear:animated];
-    self.channel.subscribed = NO;
     [[BNRCloudStore sharedStore] unsubscribeFromChannel:self.channel completion:^(BNRChatChannel *channel, NSError *error){
         if(error) {
             NSLog(@"Error %@", error.localizedDescription);
         }
+        self.channel.subscribed = NO;
         [self refreshData];
     }];
 }
@@ -120,13 +121,14 @@
 
 - (void)asyncReload {
     dispatch_async(dispatch_get_main_queue(), ^{
+        self.title = self.channel.name;
+        self.navigationItem.prompt = self.channel.subscribed?@"Subscribed":nil;
         [self.tableView reloadData];
     });
 }
 
 - (void)refreshData {
-    [self refreshDataWithCompletion:^{
-    }];
+    [self refreshDataWithCompletion:nil];
 }
 
 - (void)refreshDataWithCompletion:(void(^)(void))completion {
@@ -175,23 +177,16 @@
     return self.messages.count;
 }
 
-- (CGFloat)tableView:(UITableView *)tableView estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
-    return 120;
-}
-
-- (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath {
-    return 120;
-}
-
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     UITableViewCell *cell;
 
-    BNRChatMessageCell *mCell = [tableView dequeueReusableCellWithIdentifier:@"ChatMessageCell"];
+    BNRAutoFlexibleTextCell *mCell = [tableView dequeueReusableCellWithIdentifier:@"BNRAutoFlexibleTextCell"];
     if(!mCell) {
-        mCell = [BNRChatMessageCell bnr_instantiateCellFromNib];
+        mCell = [BNRAutoFlexibleTextCell bnr_instantiateCellFromNib];
     }
     BNRChatMessage *msg = self.messages[indexPath.row];
-    mCell.message = msg;
+    mCell.titleLabel.text = msg.senderName;
+    mCell.descriptionLabel.text = msg.message;
     cell = mCell;
 
     return cell;
@@ -218,6 +213,28 @@
 
 #pragma mark - UITextFieldDelegate
 
+//- (void)textFieldDidBeginEditing:(UITextField *)textField {
+//    UIBarButtonItem *textFieldButton = [[UIBarButtonItem alloc] initWithCustomView:self.messageTextField];
+//    UIBarButtonItem *sendButton = [[UIBarButtonItem alloc] initWithTitle:@"Send" style:UIBarButtonItemStyleDone target:self action:@selector(sendMessage:)];
+//    self.sendButton = sendButton;
+//    UIBarButtonItem *handleButton = [[UIBarButtonItem alloc] initWithTitle:@"Me" style:UIBarButtonItemStylePlain target:self action:@selector(promptForNewHandle)];
+//
+//
+//    UIBarButtonItem *leftSpace = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFixedSpace target:nil action:nil];
+//    UIBarButtonItem *rightSpace = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFixedSpace target:nil action:nil];
+//
+//    UIToolbar *t = [[UIToolbar alloc] init];
+//    t.items = @[
+//                leftSpace,
+//                handleButton,
+//                textFieldButton,
+//                sendButton,
+//                rightSpace
+//                ];
+//    textField.inputAccessoryView = t;
+//    [self.messageTextField becomeFirstResponder];
+//}
+
 - (BOOL)textFieldShouldReturn:(UITextField *)textField {
     [textField resignFirstResponder];
     if(textField.text.length) {
@@ -233,9 +250,16 @@
     if(![self.channel isEqual:channel]) {
         return; // not for us
     } else {
-        self.messages = [self.messages arrayByAddingObject:message];
-        [self asyncReload];
-        [self scrollToBottom];
+        NSInteger idx = [self.messages indexOfObjectPassingTest:^BOOL(id obj, NSUInteger idx, BOOL *stop){
+            BNRChatMessage *testMsg = obj;
+            return [testMsg.recordID isEqual:message.recordID];
+        }];
+
+        if(idx==NSNotFound) {
+            self.messages = [self.messages arrayByAddingObject:message];
+            [self asyncReload];
+            [self scrollToBottom];
+        }
     }
 }
 

@@ -7,6 +7,7 @@
 //
 
 #import <Foundation/Foundation.h>
+@class CKRecordID;
 
 typedef NS_ENUM(NSUInteger, BNRChatMessageAssetType) {
     BNRChatMessageAssetTypeNone,
@@ -26,6 +27,8 @@ typedef NS_ENUM(NSUInteger, BNRChatMessageAssetType) {
 
 @property (nonatomic) id asset;
 @property (nonatomic) BNRChatMessageAssetType assetType;
+
+@property (nonatomic) CKRecordID *recordID;
 
 - (void)loadAsset:(NSURL*)url ;
 
