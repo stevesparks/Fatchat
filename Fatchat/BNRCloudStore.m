@@ -384,20 +384,21 @@ NSString * const SubscriptionType = @"subscription";
     CKRecord *record = [[CKRecord alloc] initWithRecordType:MessageType];
 
     // Set the basic values
-    [record setObject:text forKey:MessageTextKey];
-    [record setObject:channel.name forKey:ChannelNameKey];
-    [record setObject:self.handle forKey:SenderKey];
-    [record setObject:[[UIDevice currentDevice] identifierForVendor].UUIDString forKey:DeviceKey];
-
+    record[MessageTextKey] = text;
+    record[ChannelNameKey] = channel.name;
+    record[SenderKey] = self.handle;
+    record[DeviceKey] = [UIDevice currentDevice].identifierForVendor.UUIDString;
+    
     // Make sure the objects delete when the DB record is deleted.
     CKReference *ref = [[CKReference alloc] initWithRecordID:channel.recordID action:CKReferenceActionDeleteSelf];
-    [record setObject:ref forKey:ChannelReferenceKey];
+    
+    record[ChannelReferenceKey] = ref;
     
     // Attach an asset if given one.
     if(assetFileUrl) {
         CKAsset *asset = [[CKAsset alloc] initWithFileURL:assetFileUrl];
-        [record setObject:@(assetType) forKey:AssetTypeKey];
-        [record setObject:asset forKey:AssetKey];
+        record[AssetKey] = asset;
+        record[AssetTypeKey] = @(assetType);
     }
 
     BNRChatMessage *message = [self messageWithRecord:record];
@@ -484,11 +485,12 @@ NSString * const SubscriptionType = @"subscription";
 }
 
 - (void)didReceiveNotification:(NSDictionary *)notificationInfo {
-    CKQueryNotification *note = [CKQueryNotification notificationFromRemoteNotificationDictionary:notificationInfo];
-    if(!note)
+    CKNotification *note = [CKNotification notificationFromRemoteNotificationDictionary:notificationInfo];
+    if(![note isKindOfClass:[CKQueryNotification class]])
         return;
 
-    [self.publicDB fetchRecordWithID:note.recordID completionHandler:^(CKRecord *record, NSError *error){
+    CKQueryNotification *queryNote = (CKQueryNotification*)note;
+    [self.publicDB fetchRecordWithID:queryNote.recordID completionHandler:^(CKRecord *record, NSError *error){
         BNRChatMessage *msg = [self messageWithRecord:record];
         BNRChatChannel *channel = [self channelWithName:record[@"channelName"]];
 
@@ -500,7 +502,6 @@ NSString * const SubscriptionType = @"subscription";
         }
     }];
     [self markNotesRead];
-//    [self.publicDB fetchRecordWithID:recordId completionHandler:^(CKRecordID *recordId, NSError *error) { }];
 }
 
 @end
